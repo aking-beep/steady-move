@@ -1,116 +1,205 @@
 'use strict';
+// Streaks, movement days and weekly maths. The rules these protect are the
+// ones most likely to quietly mislead someone about their own week.
+
 const assert = require('node:assert/strict');
 const {test} = require('node:test');
 
-const {getProgress, localDateKey, startOfWeek} = require('../.test-build/lib/progress.js');
+const {
+  getProgress,
+  currentStreak,
+  bestStreak,
+  movementDays,
+  progressMessage
+} = require('../.test-build/lib/progress.js');
+const {localDateKey, startOfWeek, addDays, relativeDay} = require('../.test-build/lib/date.js');
+const {buildDemoHistory} = require('../.test-build/lib/demo.js');
+const {logOnDay, makeLog} = require('./helpers.cjs');
 
-/** Local midday on a given local date, so time zones cannot shift the day. */
-const at = (year, month, day, hour = 12) => new Date(year, month - 1, day, hour, 0, 0);
+const NOW = new Date(2026, 9, 19, 10, 0); // Monday 19 October 2026, local time
 
-let counter = 0;
-function log(date, overrides = {}) {
-  counter += 1;
-  return {
-    id: `session-${counter}`,
-    completedAt: date.toISOString(),
-    planTitle: 'Everyday strength flow',
-    focus: 'balanced',
-    plannedMinutes: 20,
-    completedSeconds: 1200,
-    finished: true,
-    energy: 'okay',
-    mood: 'neutral',
-    ...overrides
-  };
-}
+// ——— Date handling ————————————————————————————————————————————————————————
 
-test('localDateKey uses the local calendar day', () => {
-  assert.equal(localDateKey(at(2026, 1, 5, 23)), '2026-01-05');
-  assert.equal(localDateKey(at(2026, 11, 9, 0)), '2026-11-09');
+test('a day key uses local time, so a late session counts today', () => {
+  const lateNight = new Date(2026, 9, 19, 23, 40);
+  assert.equal(localDateKey(lateNight), '2026-10-19');
+
+  const earlyMorning = new Date(2026, 9, 19, 0, 5);
+  assert.equal(localDateKey(earlyMorning), '2026-10-19');
 });
 
 test('weeks start on Monday', () => {
-  // 2026-10-19 is a Monday; 2026-10-25 the Sunday that closes the same week.
-  assert.equal(localDateKey(startOfWeek(at(2026, 10, 19))), '2026-10-19');
-  assert.equal(localDateKey(startOfWeek(at(2026, 10, 25))), '2026-10-19');
-  assert.equal(localDateKey(startOfWeek(at(2026, 10, 26))), '2026-10-26');
+  const sunday = new Date(2026, 9, 25, 12, 0);
+  assert.equal(localDateKey(startOfWeek(sunday)), '2026-10-19');
+
+  const monday = new Date(2026, 9, 19, 12, 0);
+  assert.equal(localDateKey(startOfWeek(monday)), '2026-10-19');
 });
 
-test('an empty history reports nothing done', () => {
-  const progress = getProgress([], at(2026, 10, 21));
-  assert.equal(progress.totalSessions, 0);
-  assert.equal(progress.totalMinutes, 0);
-  assert.equal(progress.streak, 0);
-  assert.equal(progress.weekDays, 0);
-  assert.equal(progress.weekSessions, 0);
-  assert.equal(progress.minutesThisWeek, 0);
-  assert.equal(progress.lastFive.length, 0);
-  assert.equal(progress.chart.length, 7);
-  assert.deepEqual(progress.chart.map(day => day.day), ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-  assert.ok(progress.chart.every(day => day.done === false));
+test('relative days read naturally', () => {
+  assert.equal(relativeDay(new Date(2026, 9, 19, 9, 0).toISOString(), NOW), 'Today');
+  assert.equal(relativeDay(new Date(2026, 9, 18, 9, 0).toISOString(), NOW), 'Yesterday');
 });
 
-test('partial saves are kept but never counted', () => {
+// ——— Qualifying ———————————————————————————————————————————————————————————
+
+test('only qualifying sessions count towards movement days', () => {
   const history = [
-    log(at(2026, 10, 20), {finished: false, completedSeconds: 300}),
-    log(at(2026, 10, 21))
+    logOnDay(NOW, {qualifies: true}),
+    logOnDay(addDays(NOW, -1), {qualifies: false})
   ];
-  const progress = getProgress(history, at(2026, 10, 21));
-  assert.equal(progress.totalSessions, 1);
-  assert.equal(progress.totalMinutes, 20);
-  assert.equal(progress.weekDays, 1);
-  assert.equal(progress.streak, 1);
-  assert.equal(progress.lastFive.length, 1);
-  assert.equal(progress.chart.find(day => day.key === '2026-10-20').done, false);
+  const days = movementDays(history);
+  assert.equal(days.size, 1);
+  assert.ok(days.has('2026-10-19'));
 });
 
-test('weekly movement days count distinct days, not sessions', () => {
+test('a partial session is kept in history but never counted', () => {
+  const history = [logOnDay(NOW, {qualifies: false, activeSeconds: 300})];
+  const summary = getProgress(history, NOW);
+
+  assert.equal(summary.totalSessions, 0, 'a partial save is not a completed session');
+  assert.equal(summary.streak, 0);
+  assert.equal(summary.minutesThisWeek, 0);
+  assert.equal(summary.recent.length, 1, 'but it still appears in recent history');
+});
+
+// ——— Streaks ——————————————————————————————————————————————————————————————
+
+test('a streak counts consecutive days up to today', () => {
   const history = [
-    log(at(2026, 10, 19, 7)),
-    log(at(2026, 10, 19, 18)),
-    log(at(2026, 10, 22))
+    logOnDay(NOW),
+    logOnDay(addDays(NOW, -1)),
+    logOnDay(addDays(NOW, -2))
   ];
-  const progress = getProgress(history, at(2026, 10, 23));
-  assert.equal(progress.weekSessions, 3);
-  assert.equal(progress.weekDays, 2);
-  assert.equal(progress.minutesThisWeek, 60);
+  assert.equal(currentStreak(history, NOW), 3);
 });
 
-test('last week does not leak into this week', () => {
-  const history = [log(at(2026, 10, 18)), log(at(2026, 10, 19))];
-  const progress = getProgress(history, at(2026, 10, 19));
-  assert.equal(progress.totalSessions, 2);
-  assert.equal(progress.weekSessions, 1);
-  assert.equal(progress.weekDays, 1);
-  // The Sunday session still extends the streak across the week boundary.
-  assert.equal(progress.streak, 2);
+test('two sessions on one day do not make a two day streak', () => {
+  const today = addDays(NOW, 0);
+  const history = [
+    makeLog({dateKey: localDateKey(today), completedAt: new Date(2026, 9, 19, 7, 0).toISOString()}),
+    makeLog({dateKey: localDateKey(today), completedAt: new Date(2026, 9, 19, 19, 0).toISOString()})
+  ];
+
+  assert.equal(currentStreak(history, NOW), 1, 'same-day sessions are one movement day');
+
+  const summary = getProgress(history, NOW);
+  assert.equal(summary.weekDays, 1, 'the week strip shows one day, not two');
+  assert.equal(summary.weekSessions, 2, 'but both sessions are counted as sessions');
 });
 
-test('streak counts consecutive days and survives an open today', () => {
-  const history = [log(at(2026, 10, 19)), log(at(2026, 10, 20)), log(at(2026, 10, 21))];
-  assert.equal(getProgress(history, at(2026, 10, 21)).streak, 3);
-  // Nothing done yet today: yesterday's streak still stands.
-  assert.equal(getProgress(history, at(2026, 10, 22)).streak, 3);
-  // A full day missed resets it.
-  assert.equal(getProgress(history, at(2026, 10, 23)).streak, 0);
-});
-
-test('recent sessions are newest first and capped at five', () => {
-  const history = [2, 3, 4, 5, 6, 7, 8].map(day => log(at(2026, 10, day)));
-  const progress = getProgress(history, at(2026, 10, 8));
-  assert.equal(progress.lastFive.length, 5);
-  assert.deepEqual(
-    progress.lastFive.map(entry => localDateKey(new Date(entry.completedAt))),
-    ['2026-10-08', '2026-10-07', '2026-10-06', '2026-10-05', '2026-10-04']
+test('an unfinished today does not break yesterday\'s streak', () => {
+  const history = [logOnDay(addDays(NOW, -1)), logOnDay(addDays(NOW, -2))];
+  assert.equal(
+    currentStreak(history, NOW),
+    2,
+    'the streak runs to yesterday while today is still open'
   );
 });
 
-test('minutes are reported from time actually performed', () => {
+test('a gap ends the streak without erasing the best one', () => {
   const history = [
-    log(at(2026, 10, 20), {plannedMinutes: 40, completedSeconds: 1800}),
-    log(at(2026, 10, 21), {plannedMinutes: 10, completedSeconds: 600})
+    logOnDay(NOW),
+    // Two day gap here.
+    logOnDay(addDays(NOW, -3)),
+    logOnDay(addDays(NOW, -4)),
+    logOnDay(addDays(NOW, -5)),
+    logOnDay(addDays(NOW, -6))
   ];
-  const progress = getProgress(history, at(2026, 10, 21));
-  assert.equal(progress.totalMinutes, 40);
-  assert.equal(progress.minutesThisWeek, 40);
+  assert.equal(currentStreak(history, NOW), 1);
+  assert.equal(bestStreak(history), 4);
+});
+
+test('an empty history is zero everywhere, not an error', () => {
+  const summary = getProgress([], NOW);
+  assert.equal(summary.streak, 0);
+  assert.equal(summary.totalSessions, 0);
+  assert.equal(summary.weekDays, 0);
+  assert.equal(summary.chart.length, 7);
+  assert.ok(summary.isEmpty);
+  assert.deepEqual(summary.byType, []);
+});
+
+// ——— Week boundaries ——————————————————————————————————————————————————————
+
+test('last week does not leak into this week', () => {
+  const lastSunday = addDays(NOW, -1); // Sunday 18 October
+  const history = [logOnDay(lastSunday), logOnDay(NOW)];
+  const summary = getProgress(history, NOW);
+
+  assert.equal(summary.weekDays, 1, 'only Monday belongs to this week');
+  assert.equal(summary.totalSessions, 2, 'both still count in the all-time total');
+});
+
+test('the week chart marks today and leaves future days open', () => {
+  const wednesday = new Date(2026, 9, 21, 10, 0);
+  const summary = getProgress([logOnDay(wednesday)], wednesday);
+
+  const today = summary.chart.find(day => day.isToday);
+  assert.ok(today);
+  assert.equal(today.key, '2026-10-21');
+  assert.ok(today.done);
+
+  const future = summary.chart.filter(day => day.isFuture);
+  assert.equal(future.length, 4, 'Thursday to Sunday are still to come');
+  assert.ok(future.every(day => !day.done));
+});
+
+// ——— Totals ——————————————————————————————————————————————————————————————
+
+test('weekly totals add up by type', () => {
+  const history = [
+    logOnDay(NOW, {type: 'mobility', activeSeconds: 600}),
+    logOnDay(addDays(NOW, 1), {type: 'mobility', activeSeconds: 600}),
+    logOnDay(addDays(NOW, 2), {type: 'runwalk', activeSeconds: 1200})
+  ];
+  const summary = getProgress(history, addDays(NOW, 2));
+
+  const mobility = summary.byType.find(entry => entry.type === 'mobility');
+  assert.equal(mobility.sessions, 2);
+  assert.equal(mobility.minutes, 20);
+  assert.equal(summary.minutesThisWeek, 40);
+});
+
+// ——— Tone —————————————————————————————————————————————————————————————————
+
+test('a broken streak is never shamed', () => {
+  const summary = getProgress([], NOW);
+  const message = progressMessage(summary, 4);
+  assert.ok(!/fail|lost|missed|broke|should have/i.test(message), `shaming language: ${message}`);
+});
+
+test('a week with no movement invites rather than scolds', () => {
+  const history = [logOnDay(addDays(NOW, -8))];
+  const summary = getProgress(history, NOW);
+  const message = progressMessage(summary, 4);
+  assert.match(message, /start again today/i);
+});
+
+// ——— Demo data ————————————————————————————————————————————————————————————
+
+test('demo history produces inspectable progress', () => {
+  const history = buildDemoHistory(NOW);
+  const summary = getProgress(history, NOW);
+
+  assert.ok(history.length > 10, 'enough history to review');
+  assert.ok(summary.totalSessions > 10);
+  assert.ok(summary.bestStreak >= 2);
+  assert.ok(summary.byType.length > 0);
+
+  const partial = history.filter(log => !log.qualifies);
+  assert.ok(partial.length > 0, 'includes a partial save, which must not count');
+  assert.equal(
+    summary.totalSessions,
+    history.length - partial.length,
+    'partial saves are excluded from the completed total'
+  );
+});
+
+test('demo history keeps same-day sessions as one movement day', () => {
+  const history = buildDemoHistory(NOW);
+  const yesterday = localDateKey(addDays(NOW, -1));
+  const sameDay = history.filter(log => log.dateKey === yesterday);
+  assert.equal(sameDay.length, 2, 'the fixture deliberately has two sessions on one day');
+  assert.equal(movementDays(sameDay).size, 1);
 });

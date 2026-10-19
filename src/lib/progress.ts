@@ -1,90 +1,149 @@
-// Progress maths. Only completed sessions (at least 70% of the timed plan
-// performed) count towards movement days, weekly target and streaks — partial
-// saves are kept in history but never counted. Weeks start on Monday, in the
-// device's local time zone.
+// Progress maths.
+//
+// Two product rules shape everything here:
+//   1. Only sessions where enough was actually done count towards movement
+//      days and streaks. Partial saves stay in history but never inflate it.
+//   2. A streak is a count of calendar days, not of sessions. Three sessions
+//      in one day is one movement day, and today being unfinished never breaks
+//      a streak — the count simply runs to yesterday until you move.
 
-import {WorkoutLog} from '../types';
+import {SessionType, WorkoutLog} from '../types';
+import {WEEKDAY_LABELS, addDays, daysBetween, localDateKey, startOfWeek} from './date';
 
 export interface ProgressDay {
-  /** Local YYYY-MM-DD key for the day. */
+  /** Local YYYY-MM-DD key. */
   key: string;
-  /** Short weekday label, e.g. "Mon". */
-  day: string;
+  /** Single-letter label for the week strip. */
+  label: string;
   done: boolean;
+  isToday: boolean;
+  /** Days later in the current week, drawn as waiting rather than missed. */
+  isFuture: boolean;
+}
+
+export interface TypeTotal {
+  type: SessionType;
+  sessions: number;
+  minutes: number;
 }
 
 export interface ProgressSummary {
   totalSessions: number;
   totalMinutes: number;
+  /** Consecutive calendar days with a qualifying session. */
   streak: number;
-  /** Distinct days with a completed session in the current week. */
+  /** Longest streak ever recorded, so a break never erases the history. */
+  bestStreak: number;
+  /** Distinct days with a qualifying session this week. */
   weekDays: number;
   weekSessions: number;
   minutesThisWeek: number;
   chart: ProgressDay[];
-  lastFive: WorkoutLog[];
+  byType: TypeTotal[];
+  recent: WorkoutLog[];
+  /** True when the person has never saved a qualifying session. */
+  isEmpty: boolean;
 }
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Local calendar day key — deliberately not UTC, so a late session counts today. */
-export function localDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+/** Days with at least one qualifying session, as local date keys. */
+export function movementDays(history: WorkoutLog[]): Set<string> {
+  const days = new Set<string>();
+  for (const log of history) {
+    if (!log.qualifies) continue;
+    days.add(log.dateKey || localDateKey(new Date(log.completedAt)));
+  }
+  return days;
 }
 
-/** Monday 00:00 local time of the week containing `date`. */
-export function startOfWeek(date: Date): Date {
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const weekday = (start.getDay() + 6) % 7; // 0 = Monday
-  start.setDate(start.getDate() - weekday);
-  return start;
+/**
+ * Consecutive days up to and including today. If today has no session yet the
+ * count runs to yesterday, so an unfinished day is never treated as a break.
+ */
+export function currentStreak(history: WorkoutLog[], now: Date = new Date()): number {
+  const days = movementDays(history);
+  if (days.size === 0) return 0;
+
+  let cursor = days.has(localDateKey(now)) ? now : addDays(now, -1);
+  let streak = 0;
+  while (days.has(localDateKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
 }
 
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  next.setDate(next.getDate() + days);
-  return next;
+/** The longest run of consecutive movement days in the whole history. */
+export function bestStreak(history: WorkoutLog[]): number {
+  const keys = Array.from(movementDays(history)).sort();
+  if (keys.length === 0) return 0;
+
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < keys.length; i++) {
+    const previous = new Date(`${keys[i - 1]}T00:00:00`);
+    const current = new Date(`${keys[i]}T00:00:00`);
+    run = daysBetween(previous, current) === 1 ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+  return best;
 }
 
 export function getProgress(history: WorkoutLog[], now: Date = new Date()): ProgressSummary {
-  const completed = history.filter(log => log.finished);
-  const doneDays = new Set(completed.map(log => localDateKey(new Date(log.completedAt))));
+  const qualifying = history.filter(log => log.qualifies);
+  const days = movementDays(history);
 
   const weekStart = startOfWeek(now);
-  const chart: ProgressDay[] = DAY_LABELS.map((day, index) => {
-    const key = localDateKey(addDays(weekStart, index));
-    return {key, day, done: doneDays.has(key)};
+  const todayKey = localDateKey(now);
+  const chart: ProgressDay[] = WEEKDAY_LABELS.map((label, index) => {
+    const date = addDays(weekStart, index);
+    const key = localDateKey(date);
+    return {
+      key,
+      label,
+      done: days.has(key),
+      isToday: key === todayKey,
+      isFuture: daysBetween(now, date) > 0
+    };
   });
 
   const weekKeys = new Set(chart.map(day => day.key));
-  const weekLogs = completed.filter(log => weekKeys.has(localDateKey(new Date(log.completedAt))));
+  const weekLogs = qualifying.filter(log => weekKeys.has(log.dateKey || localDateKey(new Date(log.completedAt))));
 
-  // Streak runs back from today, or from yesterday when today is still open.
-  const todayKey = localDateKey(now);
-  let cursor = doneDays.has(todayKey) ? new Date(now.getTime()) : new Date(now.getTime() - DAY_MS);
-  let streak = 0;
-  while (doneDays.has(localDateKey(cursor))) {
-    streak += 1;
-    cursor = new Date(cursor.getTime() - DAY_MS);
+  const totals = new Map<SessionType, TypeTotal>();
+  for (const log of weekLogs) {
+    const entry = totals.get(log.type) ?? {type: log.type, sessions: 0, minutes: 0};
+    entry.sessions += 1;
+    entry.minutes += Math.round(log.activeSeconds / 60);
+    totals.set(log.type, entry);
   }
 
-  const totalSeconds = completed.reduce((sum, log) => sum + log.completedSeconds, 0);
-  const weekSeconds = weekLogs.reduce((sum, log) => sum + log.completedSeconds, 0);
+  const recent = [...history]
+    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+    .slice(0, 8);
 
   return {
-    totalSessions: completed.length,
-    totalMinutes: Math.round(totalSeconds / 60),
-    streak,
+    totalSessions: qualifying.length,
+    totalMinutes: Math.round(qualifying.reduce((sum, log) => sum + log.activeSeconds, 0) / 60),
+    streak: currentStreak(history, now),
+    bestStreak: bestStreak(history),
     weekDays: chart.filter(day => day.done).length,
     weekSessions: weekLogs.length,
-    minutesThisWeek: Math.round(weekSeconds / 60),
+    minutesThisWeek: Math.round(weekLogs.reduce((sum, log) => sum + log.activeSeconds, 0) / 60),
     chart,
-    lastFive: [...completed]
-      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-      .slice(0, 5)
+    byType: Array.from(totals.values()).sort((a, b) => b.sessions - a.sessions || a.type.localeCompare(b.type)),
+    recent,
+    isEmpty: qualifying.length === 0
   };
+}
+
+/**
+ * Encouragement that matches the week so far. Never shaming, never urgent: a
+ * broken streak is an invitation, not a failure.
+ */
+export function progressMessage(summary: ProgressSummary, weeklyTarget: number): string {
+  if (summary.isEmpty) return 'Your first session will show up here.';
+  if (summary.weekDays === 0) return 'Start again today. The week is still open.';
+  if (summary.weekDays >= weeklyTarget) return 'You have met your movement days for this week.';
+  const left = weeklyTarget - summary.weekDays;
+  return `${summary.weekDays} ${summary.weekDays === 1 ? 'day' : 'days'} so far. ${left} more would meet your week.`;
 }

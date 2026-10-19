@@ -5,11 +5,44 @@
     "scheme": "steadymove",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.steadymove.app" },
-    "android": { "package": "com.steadymove.app", "edgeToEdgeEnabled": true },
-    "web": { "name": "Steady Move" },
-    "extra": { "privacy": "On-device storage only in MVP. No accounts or analytics." }
+    "backgroundColor": "#F5F2EB",
+    "primaryColor": "#1F3D30",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.steadymove.app",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-mono.png",
+        "backgroundColor": "#1F3D30"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.steadymove.app",
+      "buildNumber": "1"
+    },
+    "web": {"name": "Steady Move", "favicon": "./assets/favicon.png", "bundler": "metro", "output": "single"},
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#F5F2EB"
+        }
+      ]
+    ],
+    "experiments": {"typedRoutes": false},
+    "extra": {
+      "privacy": "All data stays on this device. No account, no network calls, no analytics."
+    }
   }
 }

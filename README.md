@@ -1,97 +1,259 @@
-# steady. — Steady Move
+# Steady Move
 
-An offline-first movement practice app. You check in with how your day actually
-is, get a short realistic plan, and track that you showed up.
+**Move for today.**
 
-Expo SDK 57 · React Native 0.86 · React 19 · TypeScript (strict).
+A calm daily movement companion for Android, built with Expo and React Native.
+Steady Move asks how you are arriving today, then builds a session that fits —
+strength, calisthenics, run/walk, mobility, breathing or recovery — runs it with
+you, and records it. Everything happens on the device: no account, no network,
+no analytics.
 
-> General wellness only. Not diagnosis, rehabilitation, or medical coaching, and
-> not for children. See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the full product
-> boundaries.
+The product philosophy, in one line: **the best workout is the one that fits the
+person today and helps them come back tomorrow.**
 
-## Why it exists
+---
 
-Deciding what to do is the part that stops people. The app removes that decision
-with three actions: check in, get a plan sized to the time you actually have,
-show up. There is no streak shaming, no calorie or body-shape scoring, no
-account, and no cloud.
-
-## Getting started
+## Run it
 
 ```bash
 npm install
-npm start          # Expo dev server — open in Expo Go on a device
-npm run ios        # or: npm run android, npm run web
+npx expo start
 ```
 
-Checks:
+Then press `a` to open on a connected Android device or emulator, or scan the QR
+code with **Expo Go**.
+
+Directly to Android:
 
 ```bash
-npm run typecheck  # tsc --noEmit, strict
-npm test           # compiles the pure modules, then node --test
-npm run check      # both
-npx expo-doctor    # dependency/config health
+npx expo start --android
 ```
 
-## How it is put together
+### On your phone with Expo Go
+
+1. Install **Expo Go** from the Play Store.
+2. Put the phone and this computer on the same Wi-Fi network.
+3. Run `npx expo start` here.
+4. Scan the QR code from the terminal with Expo Go (Android scans it from
+   inside the Expo Go app, not the camera app).
+5. If the phone and computer cannot see each other on the network, run
+   `npx expo start --tunnel` instead.
+
+### Installable Android build (APK)
+
+```bash
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --platform android --profile preview
+```
+
+The `preview` profile in `eas.json` is configured for **internal distribution**
+and builds an **APK** rather than an app bundle, so the result can be installed
+directly. When the build finishes, EAS prints a URL: open it on the phone and
+install, or run `eas build:run --platform android --profile preview` to install
+onto a connected device. Android will ask you to allow installation from the
+browser the first time.
+
+### Checks
+
+```bash
+npm run typecheck   # tsc --noEmit, strict
+npm run lint        # eslint
+npm test            # node:test over the compiled engine and logic
+npm run check       # all three
+npx expo-doctor     # dependency and config validation
+```
+
+---
+
+## What it does
+
+**Onboarding** asks five questions — goals, level, preferred activities,
+equipment, usual session length and weekly movement days — and never asks again
+unless you reset it from Settings.
+
+**Today** greets you, offers the daily check-in, shows the week so far
+(movement days, minutes, streak) and four Quick Move shortcuts that start a
+real session immediately.
+
+**The check-in** is seven steps: energy, mood, soreness, pain, time, location
+and equipment to hand. It takes about fifteen seconds.
+
+**The engine** turns that into a session with five parts — *arrive, warm up,
+move, reset, reflect* — that lasts exactly as long as you asked for, rests
+included. The preview explains, in your own reported terms, why you were given
+this session. **Rebuild** produces a different valid session from the same
+answers.
+
+**The player** runs the session: a countdown ring per block, form cues on
+demand, a dedicated rest state with `+15 sec` and `Skip rest`, pause, skip, and
+haptics at each transition. Leaving the app pauses the timer rather than letting
+it run on without you, and the session survives being closed entirely.
+
+**Completion** records what you did, asks two optional questions and takes an
+optional note. **Progress** updates immediately.
+
+---
+
+## Safety rules
+
+These are enforced in the engine and covered by tests, not left to the UI:
+
+| Reported state | What the app does |
+| --- | --- |
+| Pain that makes exercise inappropriate | Breathing and gentle attention only. No exercise is prescribed, at any level, even if a specific session was chosen from Explore. |
+| Low energy **and** real soreness | A gentle recovery session: no load, no circuit, no rest timers. |
+| Low energy, low mood, or soreness alone | The session stays, but the intensity drops. |
+| High energy, no soreness, trains regularly | Room to work harder, with reps left in reserve. |
+
+Steady Move never diagnoses anything. The pain path shows: *"Pain is different
+from normal training soreness. Consider resting, and seek guidance from a
+qualified health professional if the pain is significant, persistent or
+concerning."*
+
+The library also gates on capability: a movement is never offered above your
+stated level, or without the equipment you said you have. Kettlebell swings are
+deliberately absent from the MVP — the ballistic hip snap needs coaching an app
+cannot give.
+
+---
+
+## Architecture
 
 ```
-App.tsx                  all four screens, onboarding, and the session runner
-app.json                 Expo config (slug steady-move, scheme steadymove)
-src/types.ts             shared domain types + defaults
-src/data/exercises.ts    exercise library, tagged by phase/focus/level/equipment
-src/lib/planner.ts       deterministic plan generation + timer formatting
-src/lib/progress.ts      streaks, weekly movement days, recent sessions
-src/lib/storage.ts       AsyncStorage read/write with validation on read
-tests/*.test.cjs         unit tests for the planner and progress maths
+app/                      expo-router routes; one file per screen
+  _layout.tsx             hydration gate, splash, stack
+  index.tsx               sends you to onboarding or Today
+  onboarding/             welcome, goals, level, activities, equipment,
+                          schedule, complete
+  (tabs)/                 today, explore, progress, settings
+  check-in.tsx            the seven-step daily check-in
+  workout/                preview, session (the player), complete
+  activity/breathe.tsx    the standalone breathing player
+
+src/
+  engine/                 the adaptive session engine
+    planner.ts            chooses the session and builds its blocks
+    duration.ts           allocation maths; the parts always sum to the whole
+    runwalk.ts            run/walk intervals, by effort rather than pace
+  data/
+    exercises.ts          73 movements with cues, regressions, progressions
+    explore.ts            the Explore catalogue
+  store/                  four small zustand stores, hydrated at launch
+    useProfileStore       profile, settings, onboarding draft
+    useTodayStore         today's check-in and the session built from it
+    useSessionStore       the running workout
+    useHistoryStore       saved sessions
+  lib/                    storage, progress maths, dates, haptics, demo data
+  components/             Button, Card, ChoiceChip, ProgressRing, Timer,
+                          BreathingCircle, ExerciseCard, MetricCard,
+                          EmptyState, ScreenContainer, SectionHeader
+  theme/                  colour, spacing, radius, type and motion tokens
+  hooks/                  reduced motion, interval timing
 ```
 
-`src/types.ts`, `src/data/exercises.ts`, `src/lib/planner.ts` and
-`src/lib/progress.ts` import nothing from React Native on purpose — `npm test`
-compiles exactly those four into `.test-build/` and runs the suites against
-plain Node, so the rules below are tested without a simulator.
+`src/engine`, `src/data` and most of `src/lib` are deliberately free of React
+Native imports, so they compile and run under plain Node for testing.
 
-## Rules the planner guarantees
+### The workout engine
 
-These are enforced in `src/lib/planner.ts` and covered by `tests/planner.test.cjs`
-across every combination of energy, soreness, pain, time budget, modality, level
-and equipment:
+Deterministic by design: the same profile, check-in, history and variant always
+produce the same session. Nothing is random, and nothing calls a network or a
+model.
 
-- **Pain or injury reported** → mindfulness only (seated breathing and body
-  scan), no exercise instructions, and the plan says the app cannot assess an
-  injury.
-- **Low energy or high soreness** → gentler mobility session, with a
-  stop-if-anything-hurts cue on every working block.
-- **Beginner** → beginner-appropriate movements only.
-- **Dumbbells not selected** → no dumbbell movements, ever. No mat selected → no
-  floor-based movements.
-- **Every plan lasts exactly the chosen time budget** (10, 20 or 40 minutes).
-- **Movement plans always have a warmup and a cooldown**; mindfulness-only plans
-  need neither.
-- **Same check-in, same plan.** Generation is deterministic: no randomness, no
-  network, no model calls.
+1. **Safety first.** Pain, or low energy with soreness, routes to recovery
+   before anything else is considered.
+2. **Session type.** Among the activities you enjoy that are actually possible
+   right now — run/walk needs somewhere to run, loaded strength needs load — it
+   picks the one you have trained least recently. "Rebuild" steps along that
+   ranking rather than re-rolling the dice.
+3. **Intensity** comes from energy, mood, soreness and level.
+4. **Time.** The budget is split across the five phases, and the main block
+   takes what is left, so a longer session means more training rather than a
+   longer warm-up. Work and rest are allocated in five-second steps that sum to
+   exactly the minutes you asked for. A timed hold is capped near its suggested
+   length — a 25-second dead hang never becomes a 75-second one — and the
+   seconds that releases go to rest.
+5. **Selection** walks movement patterns in turn (squat, push, hinge, pull,
+   core…) so a circuit is never six squat variations, and repeats the circuit as
+   labelled rounds when a session is longer than the available library.
 
-Progress (`src/lib/progress.ts`): a session counts as complete only when at
-least 70% of the timed plan was performed. Partial saves stay in history but
-never count towards movement days or streaks. Weekly targets count distinct
-days, not sessions, and weeks start on Monday in the device's local time zone.
+### Storage
 
-## Privacy
+AsyncStorage, one key per concern, each wrapped in a versioned envelope
+(`STORAGE_VERSION`). Every read is validated field by field: an unknown value
+falls back, a corrupt or truncated payload degrades to a safe default, and a
+payload from a future version is ignored rather than guessed at. A failed write
+never throws into the app. "Delete local data" in Settings removes every key.
 
-In this MVP everything is stored unencrypted in AsyncStorage on the device.
-There is no account, no server, no cloud backup, no analytics, no ads, and no
-GPS or sensor recording. Run + walk guidance is time-based, with no distance or
-pace tracking. Uninstalling the app may erase your data; **Settings → Erase
-workout history** clears completed sessions on demand.
+### Testing
 
-## Status and next steps
+80 tests across four suites, run with `node:test` against the compiled pure
+modules:
 
-Functional MVP. The planner and progress maths are unit tested; the UI has not
-been through a device smoke test in this repository yet.
-[CURSOR_PROMPT.md](CURSOR_PROMPT.md) is the hardening checklist for real-device
-testing (Expo Go runs on Android and iOS, accessibility audit, wellness wording
-audit, then EAS internal distribution).
+- `tests/engine.test.cjs` — session length at 10/20/40 minutes, phase structure,
+  the pain and recovery routes, equipment and level gating, determinism,
+  rebuild, run/walk effort language, and that a session is never empty. The
+  safety assertions sweep thousands of input combinations.
+- `tests/progress.test.cjs` — streaks, same-day sessions counting once, week
+  boundaries, partial saves never counting, and that the copy never shames.
+- `tests/library.test.cjs` — library completeness, wellness wording, every
+  Explore entry building a valid session, and the qualification rule.
+- `tests/storage.test.cjs` — round trips, corruption, version skew and deletion,
+  against a stubbed AsyncStorage.
 
-Deferred by design: audio guidance, video, progressive training blocks, GPS,
-Apple Health / Health Connect, AI plan generation, accounts and sync,
-leaderboards, subscriptions, sharing, push reminders.
+### Demo data
+
+Settings → tap **Version** seven times to reveal the developer section, then
+**Seed demo history**. It writes four believable weeks — including a gap, a
+restart, a doubled-up day and one partial save that must not count — so
+progress, streaks and the weekly chart can be reviewed without completing twenty
+sessions by hand.
+
+---
+
+## Accessibility
+
+Minimum 44pt touch targets; every control labelled for TalkBack; selection shown
+by fill, border and a tick rather than colour alone; text scales with the OS
+setting (the session clock is the one exception, so the digits cannot clip
+inside the ring); progress elements expose role and value; and a **Reduce
+motion** setting that combines with the device setting to drop every animation
+to a still frame.
+
+---
+
+## Known limitations of this MVP
+
+- **Not device-tested.** Everything here is verified by typecheck, lint, 80
+  automated tests and a successful Android Metro bundle. It has not been run on
+  a physical phone or an emulator — that is the next step, and the acceptance
+  journey in `PRODUCT_SPEC.md` is the script for it.
+- **Timers pause in the background.** Leaving the app pauses the session rather
+  than counting on without you. There are no background timers or notifications,
+  so a session will not continue with the screen off.
+- **No audio or video.** Movements are described in text with cues; there is no
+  voice guidance and no demonstration footage.
+- **No progressive training plan.** Sessions adapt day to day, but the app does
+  not yet build a multi-week block or progress load over time.
+- **Run/walk has no GPS.** Sessions are time-based and judged by effort. No
+  distance, no pace, no map.
+- **Streak qualification is by blocks completed** (70% of the movement blocks),
+  not by clock time, so finishing every exercise early still counts.
+- **One device, one person.** No account, no sync, no export. Deleting the app
+  deletes the history.
+
+## Next phase
+
+Once the daily loop is validated on real devices: progressive training blocks,
+voice and audio guidance, Health Connect, optional cloud sync and accounts,
+richer personalisation, and sport-specific conditioning. The architecture leaves
+seams for these — the engine takes history as an input already — but none of
+them are built at the expense of the loop that exists today.
+
+---
+
+Steady Move offers general movement and wellbeing guidance. It is not medical
+advice and cannot assess an injury. If something hurts, or you are unsure
+whether exercise is right for you, speak to a qualified health professional.
