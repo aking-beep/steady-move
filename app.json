@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Steady Move",
+    "slug": "steady-move",
+    "scheme": "steadymove",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.steadymove.app" },
+    "android": { "package": "com.steadymove.app", "edgeToEdgeEnabled": true },
+    "web": { "name": "Steady Move" },
+    "extra": { "privacy": "On-device storage only in MVP. No accounts or analytics." }
+  }
+}
