@@ -34,12 +34,13 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
+    "react-native-web": "~0.21.4",
     "react-native-worklets": "0.10.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
-    "babel-preset-expo": "^57.0.16",
+    "babel-preset-expo": "~57.0.16",
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "~5.9.2",

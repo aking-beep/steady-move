@@ -55,6 +55,25 @@ install, or run `eas build:run --platform android --profile preview` to install
 onto a connected device. Android will ask you to allow installation from the
 browser the first time.
 
+### Try it in a browser
+
+```bash
+npx expo start --web
+```
+
+The web build is how this MVP was verified end to end before any device
+testing: the full journey below runs in a browser, including persistence
+across a reload. To produce a static build:
+
+```bash
+npx expo export --platform web --output-dir dist-web
+```
+
+Note that the web build is a development and review aid, not a shipping
+target. Haptics are silent, `Alert` dialogs (the "leave this session" prompt)
+are not rendered by react-native-web, and the Android back button has no
+equivalent. Android remains the product.
+
 ### Checks
 
 ```bash
@@ -203,6 +222,11 @@ modules:
 - `tests/storage.test.cjs` — round trips, corruption, version skew and deletion,
   against a stubbed AsyncStorage.
 
+Beyond the unit suites, the web build is driven in a headless browser to walk
+the whole journey and assert there are no runtime errors. That is what caught
+the tab bar sizing and the Settings edit flow, neither of which a typecheck or
+a unit test can see.
+
 ### Demo data
 
 Settings → tap **Version** seven times to reveal the developer section, then
@@ -226,10 +250,15 @@ to a still frame.
 
 ## Known limitations of this MVP
 
-- **Not device-tested.** Everything here is verified by typecheck, lint, 80
-  automated tests and a successful Android Metro bundle. It has not been run on
-  a physical phone or an emulator — that is the next step, and the acceptance
-  journey in `PRODUCT_SPEC.md` is the script for it.
+- **Not tested on a physical Android device.** The app has been driven end to
+  end in a real browser against the web build — onboarding, the check-in, the
+  adaptive session, the player including the rest state, completion, progress,
+  persistence across a reload, the pain route, breathing, Explore, Settings
+  edit mode and demo seeding, all with no runtime errors — and the Android
+  bundle exports cleanly. What that cannot prove is how it feels in the hand:
+  touch targets, the Android back button, safe areas around the gesture bar,
+  and timer behaviour when the screen sleeps. The acceptance journey in
+  `PRODUCT_SPEC.md` is the script for that pass.
 - **Timers pause in the background.** Leaving the app pauses the session rather
   than counting on without you. There are no background timers or notifications,
   so a session will not continue with the screen off.

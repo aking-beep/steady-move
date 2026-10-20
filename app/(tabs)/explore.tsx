@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {ChevronRight} from 'lucide-react-native';
 import {Card, ScreenContainer, SectionHeader} from '../../src/components';
-import {colors, radius, spacing, type} from '../../src/theme';
+import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
 import {EXPLORE_CATEGORIES, ExploreItem, itemsByCategory} from '../../src/data/explore';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
@@ -37,7 +37,7 @@ export default function Explore() {
   );
 
   return (
-    <ScreenContainer bottomInset={spacing.xxxl}>
+    <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
         <Text style={styles.heading} accessibilityRole="header">
           Explore

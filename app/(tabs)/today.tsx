@@ -10,7 +10,7 @@ import {
   ScreenContainer,
   SectionHeader
 } from '../../src/components';
-import {colors, radius, spacing, type} from '../../src/theme';
+import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -80,7 +80,7 @@ export default function Today() {
     reduced ? undefined : FadeInDown.duration(380).delay(60 * index);
 
   return (
-    <ScreenContainer bottomInset={spacing.xxxl}>
+    <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
         <Text style={styles.greeting}>{greeting()}</Text>
         <Text style={styles.heading} accessibilityRole="header">
@@ -151,7 +151,7 @@ export default function Today() {
                 {summary.weekDays}
                 <Text style={styles.weekOf}>{` / ${weeklyTarget}`}</Text>
               </Text>
-              <Text style={styles.weekLabel}>Movement days</Text>
+              <Text style={styles.weekLabel}>Days moved</Text>
             </View>
             <View style={styles.weekDivider} />
             <View style={styles.weekMetric}>
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   week: {gap: spacing.lg},
   weekTop: {flexDirection: 'row', alignItems: 'center'},
   weekMetric: {flex: 1, gap: 2},
-  weekDivider: {width: StyleSheet.hairlineWidth, height: 36, backgroundColor: colors.border},
+  weekDivider: {width: StyleSheet.hairlineWidth, height: 36, backgroundColor: colors.border, marginHorizontal: spacing.md},
   weekValue: {...type.title, color: colors.ink},
   weekOf: {...type.subheading, color: colors.inkFaint},
   weekLabel: {...type.caption, color: colors.inkSoft, fontWeight: '400'},

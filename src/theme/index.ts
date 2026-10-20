@@ -116,5 +116,15 @@ export const motion = {
 /** Minimum tappable edge, per platform accessibility guidance. */
 export const MIN_TAP = 44;
 
+/**
+ * Bottom padding tab screens add so their last card clears the tab bar.
+ *
+ * The bar itself is sized by React Navigation, which also adds the device's
+ * safe-area inset — pinning its height clipped the labels. This is therefore a
+ * deliberate over-estimate of the bar's content height: a little extra space
+ * after the final card costs nothing, whereas too little hides it.
+ */
+export const TAB_BAR_INSET = 88;
+
 export const theme = {colors, spacing, radius, type, elevation, motion, MIN_TAP};
 export default theme;

@@ -21,7 +21,7 @@ export default function SessionPlayer() {
   const reduced = useReducedMotion();
 
   const state = useSessionStore();
-  const {session, index, remaining, running, finished} = state;
+  const {session, remaining, running, finished} = state;
   const block = currentBlock(state);
 
   const [showCues, setShowCues] = useState(false);
@@ -281,7 +281,7 @@ export default function SessionPlayer() {
         )}
 
         <Text style={[styles.counter, isRest && styles.onDarkFaint]}>
-          {`Block ${Math.min(index + 1, session.blocks.length)} of ${session.blocks.length}  ·  ${doneCount}/${exerciseBlocks.length} done`}
+          {`${doneCount} of ${exerciseBlocks.length} exercises done`}
         </Text>
       </View>
     </ScreenContainer>

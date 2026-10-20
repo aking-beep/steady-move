@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import Constants from 'expo-constants';
 import {ChevronRight} from 'lucide-react-native';
 import {Button, Card, ScreenContainer, SectionHeader, SegmentedChoice} from '../../src/components';
-import {MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
+import {TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
 import {Activity, EquipmentId, Goal, Level, TimePreference} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -137,7 +137,7 @@ export default function Settings() {
   }
 
   return (
-    <ScreenContainer bottomInset={spacing.xxxl}>
+    <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
         <Text style={styles.heading} accessibilityRole="header">
           Settings

@@ -196,7 +196,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 72,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    // Tight horizontal padding: a three-up row has to fit a word like
+    // "Occasional" without breaking it across lines.
+    paddingHorizontal: spacing.xs,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
     gap: 2
   },
   segmentItemSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 2},
-  segmentLabel: {...type.bodyStrong, color: colors.ink, textAlign: 'center'},
+  segmentLabel: {...type.bodyStrong, fontSize: 15, color: colors.ink, textAlign: 'center'},
   segmentLabelSelected: {color: colors.primary},
   segmentDetail: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center'},
   segmentDetailSelected: {color: colors.inkSoft}

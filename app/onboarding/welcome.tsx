@@ -48,17 +48,17 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   content: {justifyContent: 'space-between', paddingVertical: spacing.xxxl},
-  top: {alignItems: 'center', paddingTop: spacing.huge},
-  mark: {width: 96, height: 96, alignItems: 'center', justifyContent: 'center'},
+  top: {alignItems: 'center', paddingTop: spacing.xxxl},
+  mark: {width: 104, height: 104, alignItems: 'center', justifyContent: 'center'},
   markRing: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 7,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 10,
     borderColor: colors.primary,
-    // The open side of the ring echoes the app icon.
+    // One open side, rotated so the gap sits low and right, as in the icon.
     borderRightColor: 'transparent',
-    transform: [{rotate: '-35deg'}]
+    transform: [{rotate: '-45deg'}]
   },
   middle: {gap: spacing.md},
   wordmark: {...type.display, color: colors.ink, letterSpacing: 1},

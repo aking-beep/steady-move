@@ -10,7 +10,7 @@ import {
   ScreenContainer,
   SectionHeader
 } from '../../src/components';
-import {colors, radius, spacing, type} from '../../src/theme';
+import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
 import {SessionType} from '../../src/types';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
 import {useProfileStore} from '../../src/store/useProfileStore';
@@ -37,7 +37,7 @@ export default function Progress() {
   const weeklyTarget = profile?.weeklyTarget ?? 4;
 
   return (
-    <ScreenContainer bottomInset={spacing.xxxl}>
+    <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
         <Text style={styles.heading} accessibilityRole="header">
           Progress
