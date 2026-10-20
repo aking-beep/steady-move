@@ -84,8 +84,11 @@ export function Button({
         sizes[size],
         {backgroundColor: tone.bg, borderColor: tone.border, borderWidth: tone.border ? HAIRLINE * 2 : 0},
         fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
         animatedStyle,
+        // After the animated style, not before: the press animation sets
+        // opacity on every frame, so a dimmed disabled button placed earlier
+        // was being painted back to full strength.
+        isDisabled && styles.disabled,
         style
       ]}
     >

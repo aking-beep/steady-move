@@ -165,3 +165,38 @@ export function annotate(
     }
   }
 }
+
+/** Whole days since each movement was last completed, by exercise id. */
+export function daysSinceByExercise(
+  familiarity: Record<string, Familiarity>
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, entry] of Object.entries(familiarity)) {
+    if (entry.daysSince !== undefined) out[id] = entry.daysSince;
+  }
+  return out;
+}
+
+/** Stands in for "never done", so sorting never has to reason about Infinity. */
+export const NEVER_DONE = 999;
+
+/**
+ * Reorders a pool so the movements a person has not seen for longest come
+ * first. Stable, so the balanced ordering underneath is preserved for anything
+ * equally fresh.
+ *
+ * Without this the engine picked the same index out of the same pool every
+ * day: a regular user got wall push-ups six times in ten days out of a library
+ * of eighty-five, and every mobility day was the identical eight stretches.
+ * "Lack of variety" and "got bored" are named reasons people abandon fitness
+ * apps (Kidman et al., JMIR 2024), and repetitive exercise selection is the
+ * most common complaint in reviews of the market leader. It was ours too.
+ */
+export function freshestFirst(
+  pool: Exercise[],
+  daysSince: Record<string, number>
+): Exercise[] {
+  return [...pool].sort(
+    (a, b) => (daysSince[b.id] ?? NEVER_DONE) - (daysSince[a.id] ?? NEVER_DONE)
+  );
+}

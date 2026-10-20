@@ -19,6 +19,9 @@ import {
   Activity,
   Adaptation,
   BODY_AREA_LABELS,
+  BODY_PARTS,
+  BODY_PART_LABELS,
+  BodyPart,
   CheckIn,
   Exercise,
   BodyArea,
@@ -54,7 +57,13 @@ import {
   readReadiness,
   workedAreas
 } from './load';
-import {annotate, readFamiliarity} from './familiarity';
+import {
+  annotate,
+  daysSinceByExercise,
+  freshestFirst,
+  readFamiliarity
+} from './familiarity';
+import {flaggedParts} from './niggles';
 import {buildRunWalkBlocks} from './runwalk';
 
 export interface PlanInput {
@@ -253,6 +262,25 @@ function buildRationale(checkIn: CheckIn, intensity: Intensity, type: SessionTyp
     return `${reported}, so today is steady aerobic work judged by effort rather than pace.`;
   }
   return `${reported}, so today stays productive without pushing intensity.`;
+}
+
+/**
+ * Says what the session was built around, when something was flagged. Named
+ * plainly: a person who flagged a knee should be able to see that the session
+ * knows, rather than wondering why the squats went missing.
+ */
+function niggleNote(parts: Set<BodyPart>): string | undefined {
+  if (parts.size === 0) return undefined;
+
+  const names = BODY_PARTS.filter(part => parts.has(part)).map(part =>
+    BODY_PART_LABELS[part].toLowerCase()
+  );
+  const list =
+    names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+  return `Built around your ${list}: anything that would load it is left out, warm-up and stretches included.`;
 }
 
 /**
@@ -559,6 +587,12 @@ export function generateSession(input: PlanInput): Session {
   const adaptation =
     input.adaptation ?? readAdaptation({history, profile, now});
 
+  // How long since each movement was last done, so the pools can lead with
+  // what this person has not seen for longest.
+  const familiarity = readFamiliarity(history, now);
+  const sinceByExercise = daysSinceByExercise(familiarity);
+  const fresh = (pool: Exercise[]) => freshestFirst(pool, sinceByExercise);
+
   // How today reads, and which areas have had the least lately so the session
   // can go there first. Both come off the same decayed per-area picture.
   const readiness = readReadiness({history, checkIn, now});
@@ -578,6 +612,9 @@ export function generateSession(input: PlanInput): Session {
 
   const constraints = input.constraints;
   const excluded = new Set(adaptation.excluded);
+  // Parts to route around today. Every movement that asks something of one of
+  // these is left out, warm-up and stretches included.
+  const avoidParts = flaggedParts(profile.niggles, now);
   const filter = {
     level: profile.level,
     equipment: checkIn.equipment,
@@ -585,7 +622,8 @@ export function generateSession(input: PlanInput): Session {
     maxSpace: constraints?.space,
     discreetOnly: constraints?.discreet,
     quietOnly: constraints?.quiet,
-    exclude: excluded
+    exclude: excluded,
+    avoidParts
   };
 
   // ARRIVE — always breathing, always the same shape, so starting is easy.
@@ -598,7 +636,7 @@ export function generateSession(input: PlanInput): Session {
   // WARM UP — one movement on short sessions, two when there is room.
   const warmupPool = painFlagged
     ? BREATHING_CORE
-    : selectPool(WARMUPS, filter);
+    : fresh(selectPool(WARMUPS, filter));
   const warmupCount = budgets.warmup >= 180 ? 2 : 1;
   const warmupPicks = cycle(warmupPool.length ? warmupPool : [SAFE_WARMUP], warmupCount, variant);
   const warmupSeconds = allocate(budgets.warmup, warmupPicks.map(() => 1), 5, 30);
@@ -619,7 +657,7 @@ export function generateSession(input: PlanInput): Session {
       targetEach: 180
     });
   } else if (type === 'recovery') {
-    const gentleMobility = selectPool(MOBILITY, {...filter, gentleOnly: true});
+    const gentleMobility = fresh(selectPool(MOBILITY, {...filter, gentleOnly: true}));
     const pool = gentleMobility.length >= 3 ? gentleMobility : [...gentleMobility, ...BREATHING_CORE];
     move = buildFlow(pool, budgets.move, 'move', {variant, targetEach: 110});
   } else if (type === 'mindful') {
@@ -635,7 +673,7 @@ export function generateSession(input: PlanInput): Session {
       idPrefix: 'move'
     });
   } else if (type === 'mobility') {
-    const pool = selectPool(MOBILITY, filter);
+    const pool = fresh(selectPool(MOBILITY, filter));
     move = buildFlow(pool.length ? pool : MOBILITY, budgets.move, 'move', {variant, targetEach: 95});
   } else {
     // strength / calisthenics / balanced — a circuit of work and rest.
@@ -643,7 +681,7 @@ export function generateSession(input: PlanInput): Session {
       ...excluded,
       ...(type === 'balanced' ? [] : CARDIO.filter(e => e.category === 'cardio').map(e => e.id))
     ]);
-    let pool = selectPool(MAIN_POOL, {...filter, exclude});
+    let pool = fresh(selectPool(MAIN_POOL, {...filter, exclude}));
 
     if (type === 'strength') {
       // Prefer loaded movements, but keep bodyweight in to round the circuit out.
@@ -674,15 +712,7 @@ export function generateSession(input: PlanInput): Session {
 
   // RESET — mobility and stretching to close the body down.
   const usedInMove = new Set(move.map(block => block.exerciseId).filter((id): id is string => Boolean(id)));
-  const resetAll = selectPool(MOBILITY, {
-    level: profile.level,
-    equipment: checkIn.equipment,
-    gentleOnly: painFlagged,
-    maxSpace: constraints?.space,
-    discreetOnly: constraints?.discreet,
-    quietOnly: constraints?.quiet,
-    exclude: excluded
-  });
+  const resetAll = fresh(selectPool(MOBILITY, {...filter, gentleOnly: painFlagged}));
   // Closing down with the same stretch the session just held reads as a bug.
   // In a constrained place the pool can be too small to avoid it entirely, so
   // fall back to ordering by what the main block used least rather than
@@ -717,7 +747,7 @@ export function generateSession(input: PlanInput): Session {
         .filter(block => block.exerciseId)
         .map(block => [block.exerciseId as string, getExercise(block.exerciseId as string)])
     ),
-    readFamiliarity(history, now),
+    familiarity,
     intensity,
     profile.level
   );
@@ -736,6 +766,7 @@ export function generateSession(input: PlanInput): Session {
     focus: painFlagged ? 'Breathing and body awareness only' : SESSION_FOCUS[type],
     rationale: [
       buildRationale(checkIn, intensity, type),
+      niggleNote(avoidParts),
       readinessNote(readiness, painFlagged),
       adaptation.note,
       input.placeNote

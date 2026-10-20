@@ -73,6 +73,14 @@ test('what is written comes back unchanged', async () => {
     timePreference: 20,
     weeklyTarget: 4,
     excluded: ['mountain-climber'],
+    niggles: [
+      {
+        id: 'niggle-1',
+        part: 'shoulder',
+        startedAt: '2026-10-01T09:00:00.000Z',
+        confirmedAt: '2026-10-01T09:00:00.000Z'
+      }
+    ],
     createdAt: '2026-10-01T09:00:00.000Z'
   };
 

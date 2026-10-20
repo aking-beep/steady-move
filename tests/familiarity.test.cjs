@@ -259,3 +259,110 @@ test('annotate leaves a block it knows nothing about alone', () => {
   assert.equal(blocks[0].stepNote, undefined);
   assert.equal(blocks[0].practiceNote, undefined);
 });
+
+// ——— Variety ——————————————————————————————————————————————————————————————
+//
+// "Lack of variety" and "got bored" are named reasons people abandon health
+// apps (Kidman et al., JMIR 2024, 18 studies, 525,824 participants), and
+// repetitive exercise selection is the most common complaint in reviews of the
+// market leader. Before `freshestFirst`, a regular user training daily saw
+// wall push-ups six times in ten days out of a library of eighty-five, and
+// every mobility day was the identical eight stretches. These tests are what
+// stops that coming back.
+
+function tenDays(profileOverrides = {}) {
+  const profile = makeProfile({level: 'regular', activities: ['calisthenics'], ...profileOverrides});
+  const days = [];
+  let history = [];
+
+  for (let d = 0; d < 10; d++) {
+    const now = new Date(2026, 9, 1 + d, 10, 0);
+    const session = generateSession({
+      profile,
+      checkIn: makeCheckIn({minutes: 20}),
+      history,
+      variant: 0,
+      now
+    });
+
+    const ids = Array.from(
+      new Set(
+        session.blocks
+          .filter(block => block.phase === 'move' && block.exerciseId)
+          .map(block => block.exerciseId)
+      )
+    );
+    days.push({type: session.type, ids});
+    history = [...history, done(now, ids)];
+  }
+
+  return days;
+}
+
+test('ten days of training is not the same handful of movements', () => {
+  const days = tenDays();
+  const distinct = new Set(days.flatMap(day => day.ids));
+  // Before the fix this was single digits: the same index out of the same
+  // pool, every day.
+  assert.ok(
+    distinct.size >= 18,
+    `ten sessions used only ${distinct.size} distinct movements: ${[...distinct].join(', ')}`
+  );
+});
+
+test('two sessions of the same kind are not identical', () => {
+  const days = tenDays();
+  const byType = new Map();
+  for (const day of days) {
+    const seen = byType.get(day.type) ?? [];
+    seen.push(day.ids.join('|'));
+    byType.set(day.type, seen);
+  }
+
+  for (const [type, sessions] of byType) {
+    if (sessions.length < 2) continue;
+    assert.ok(
+      new Set(sessions).size > 1,
+      `every ${type} session was the identical list of movements`
+    );
+  }
+});
+
+test('no movement dominates when the library has alternatives', () => {
+  const days = tenDays();
+  const counts = {};
+  for (const id of days.flatMap(day => day.ids)) counts[id] = (counts[id] ?? 0) + 1;
+
+  for (const [id, count] of Object.entries(counts)) {
+    if (count < 7) continue;
+    // Appearing most days is only acceptable when nothing else in that pattern
+    // is available to this person — a carry with no weights, say.
+    const pattern = getExercise(id).movementPattern;
+    const alternatives = require('../.test-build/data/exercises.js')
+      .selectPool(require('../.test-build/data/exercises.js').MAIN_POOL, {
+        level: 'regular',
+        equipment: ['bodyweight']
+      })
+      .filter(exercise => exercise.movementPattern === pattern);
+    assert.ok(
+      alternatives.length <= 1,
+      `${id} appeared ${count} times in 10 days with ${alternatives.length} alternatives available`
+    );
+  }
+});
+
+test('the freshest ordering is stable and deterministic', () => {
+  const {freshestFirst, NEVER_DONE} = require('../.test-build/engine/familiarity.js');
+  const pool = ['air-squat', 'push-up', 'plank', 'dead-bug'].map(getExercise);
+
+  const ordered = freshestFirst(pool, {'air-squat': 0, 'push-up': 5});
+  assert.equal(ordered[0].id, 'plank', 'never done should come before done five days ago');
+  assert.equal(ordered[ordered.length - 1].id, 'air-squat', 'done today should come last');
+
+  // Equal freshness keeps the original order, so the balanced default survives.
+  assert.deepEqual(
+    freshestFirst(pool, {}).map(exercise => exercise.id),
+    pool.map(exercise => exercise.id)
+  );
+  assert.equal(NEVER_DONE > 365, true);
+});

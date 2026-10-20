@@ -5,7 +5,7 @@
 // were a real profile.
 
 import {create} from 'zustand';
-import {Profile, Settings, defaultProfile, defaultSettings} from '../types';
+import {BodyPart, Profile, Settings, defaultProfile, defaultSettings} from '../types';
 import {KEYS, parseProfile, parseSettings, readKey, removeKey, writeKey} from '../lib/storage';
 import {setHapticsEnabled} from '../lib/haptics';
 import {clearApiKey, isSecureStorageAvailable, readApiKey, writeApiKey} from '../lib/secrets';
@@ -33,6 +33,10 @@ interface ProfileState {
   /** Stops offering a movement entirely, or offers it again. */
   excludeExercise: (id: string) => Promise<void>;
   allowExercise: (id: string) => Promise<void>;
+  /** Flags a body part to train around, says it is still true, or clears it. */
+  addNiggle: (part: BodyPart) => Promise<void>;
+  confirmNiggle: (id: string) => Promise<void>;
+  clearNiggle: (id: string) => Promise<void>;
   setApiKey: (value: string) => Promise<void>;
   reset: () => void;
 }
@@ -44,7 +48,8 @@ const emptyDraft: ProfileDraft = {
   equipment: ['bodyweight'],
   timePreference: 20,
   weeklyTarget: 4,
-  excluded: []
+  excluded: [],
+  niggles: []
 };
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
@@ -129,6 +134,39 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const current = get().profile;
     if (!current) return;
     await get().updateProfile({excluded: current.excluded.filter(item => item !== id)});
+  },
+
+  addNiggle: async part => {
+    const current = get().profile;
+    if (!current) return;
+    // One flag per part: flagging a knee twice is the same knee.
+    const existing = current.niggles.find(entry => entry.part === part);
+    const now = new Date().toISOString();
+
+    const niggles = existing
+      ? current.niggles.map(entry =>
+          entry.part === part ? {...entry, confirmedAt: now} : entry
+        )
+      : [...current.niggles, {id: `${part}-${Date.now()}`, part, startedAt: now, confirmedAt: now}];
+
+    await get().updateProfile({niggles});
+  },
+
+  confirmNiggle: async id => {
+    const current = get().profile;
+    if (!current) return;
+    const now = new Date().toISOString();
+    await get().updateProfile({
+      niggles: current.niggles.map(entry =>
+        entry.id === id ? {...entry, confirmedAt: now} : entry
+      )
+    });
+  },
+
+  clearNiggle: async id => {
+    const current = get().profile;
+    if (!current) return;
+    await get().updateProfile({niggles: current.niggles.filter(entry => entry.id !== id)});
   },
 
   setApiKey: async value => {

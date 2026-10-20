@@ -9,7 +9,8 @@
 // only. The engine gates on this, so a movement is never offered to someone who
 // does not have the kit for it.
 
-import {Exercise, EquipmentId, Level, SPACE_ORDER, SpaceNeed} from '../types';
+import {BodyPart, Exercise, EquipmentId, Level, SPACE_ORDER, SpaceNeed} from '../types';
+import {conflicts} from './loads';
 
 /** Owning one of these implies the others are on hand. */
 const EQUIPMENT_IMPLIES: Partial<Record<EquipmentId, EquipmentId[]>> = {
@@ -1627,6 +1628,8 @@ export interface PoolFilter {
   patterns?: Exercise['movementPattern'][];
   /** Exclude these ids, used to avoid repeating a movement within a session. */
   exclude?: Set<string>;
+  /** Body parts to route around, from the person's flagged niggles. */
+  avoidParts?: Set<BodyPart>;
 }
 
 /** Filters a pool down to what this person can reasonably and safely do today. */
@@ -1643,6 +1646,7 @@ export function selectPool(pool: Exercise[], filter: PoolFilter): Exercise[] {
     if (filter.categories && !filter.categories.includes(exercise.category)) return false;
     if (filter.patterns && !filter.patterns.includes(exercise.movementPattern)) return false;
     if (filter.exclude?.has(exercise.id)) return false;
+    if (filter.avoidParts?.size && conflicts(exercise, filter.avoidParts)) return false;
     return true;
   });
 }

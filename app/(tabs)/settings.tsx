@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {Alert, Pressable, StyleSheet, Switch, Text, TextInput, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Constants from 'expo-constants';
@@ -6,9 +6,17 @@ import {ChevronRight} from 'lucide-react-native';
 import {Button, Card, ScreenContainer, SectionHeader, SegmentedChoice} from '../../src/components';
 import {maskKey} from '../../src/lib/secrets';
 import {HAIRLINE, TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
-import {Activity, EquipmentId, Goal, Level, TimePreference} from '../../src/types';
+import {
+  Activity,
+  BODY_PART_LABELS,
+  EquipmentId,
+  Goal,
+  Level,
+  TimePreference
+} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {getExercise} from '../../src/data/exercises';
+import {hasExpired} from '../../src/engine/niggles';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useSessionStore} from '../../src/store/useSessionStore';
@@ -74,6 +82,11 @@ export default function Settings() {
   const clearHistory = useHistoryStore(state => state.clearHistory);
   const clearToday = useTodayStore(state => state.clearToday);
   const abandonSession = useSessionStore(state => state.abandon);
+
+  const activeNiggles = useMemo(
+    () => (profile?.niggles ?? []).filter(entry => !hasExpired(entry)),
+    [profile]
+  );
 
   const apiKey = useProfileStore(state => state.apiKey);
   const secureStorage = useProfileStore(state => state.secureStorage);
@@ -201,6 +214,15 @@ export default function Settings() {
         label="Equipment"
         value={profile.equipment.map(item => EQUIPMENT_LABELS[item]).join(', ') || 'Bodyweight'}
         onPress={() => router.push({pathname: '/onboarding/equipment', params: {edit: '1'}})}
+      />
+      <LinkRow
+        label="Training around"
+        value={
+          activeNiggles.length
+            ? activeNiggles.map(entry => BODY_PART_LABELS[entry.part]).join(', ')
+            : 'Nothing flagged'
+        }
+        onPress={() => router.push('/niggles')}
       />
 
       {/* ——— Movements you have ruled out ——— */}

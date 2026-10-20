@@ -16,6 +16,7 @@
 
 import {Exercise, Profile, Session, SessionBlock} from '../types';
 import {MAIN_POOL, MOBILITY, WARMUPS, BREATHING_CORE, getExercise, selectPool} from '../data/exercises';
+import {flaggedParts} from './niggles';
 
 /** The pool a block was drawn from, so a replacement comes from the same place. */
 function poolForPhase(phase: SessionBlock['phase']): Exercise[] {
@@ -58,7 +59,10 @@ export function alternativesFor(options: {
     maxSpace: session.constraints?.space,
     discreetOnly: session.constraints?.discreet,
     quietOnly: session.constraints?.quiet,
-    exclude: new Set([...(profile.excluded ?? []), ...(block.exerciseId ? [block.exerciseId] : [])])
+    exclude: new Set([...(profile.excluded ?? []), ...(block.exerciseId ? [block.exerciseId] : [])]),
+    // A swap must obey the same flags the session was built under, or the one
+    // control people reach for becomes the hole in the filter.
+    avoidParts: flaggedParts(profile.niggles)
   });
 
   if (!current) return pool;

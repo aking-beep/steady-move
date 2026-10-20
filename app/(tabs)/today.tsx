@@ -22,6 +22,7 @@ import {
   tabular,
   type
 } from '../../src/theme';
+import {BODY_PART_LABELS} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -33,6 +34,7 @@ import {EXPLORE_ITEMS, QUICK_MOVE_IDS} from '../../src/data/explore';
 import {INTENSITY_LABEL} from '../../src/engine/planner';
 import {readAdaptation} from '../../src/engine/adaptation';
 import {readReadiness} from '../../src/engine/load';
+import {dueForConfirming} from '../../src/engine/niggles';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 
 const QUICK_ICONS: Record<string, React.ReactNode> = {
@@ -47,6 +49,8 @@ export default function Today() {
   const reduced = useReducedMotion();
 
   const profile = useProfileStore(state => state.profile);
+  const confirmNiggle = useProfileStore(state => state.confirmNiggle);
+  const clearNiggle = useProfileStore(state => state.clearNiggle);
   const checkIn = useTodayStore(state => state.checkIn);
   const session = useTodayStore(state => state.session);
   const startDraft = useTodayStore(state => state.startDraft);
@@ -64,6 +68,8 @@ export default function Today() {
   // Readiness from what the person has done and said — no watch, no score, and
   // it works on the second day rather than the fifteenth.
   const readiness = useMemo(() => readReadiness({history: logs, checkIn}), [logs, checkIn]);
+  // A flag that has been filtering for a fortnight has to earn its place again.
+  const dueNiggle = useMemo(() => dueForConfirming(profile?.niggles), [profile]);
   const weeklyTarget = profile?.weeklyTarget ?? 4;
   const hasUnfinished = Boolean(activeSession && activeStartedAt);
 
@@ -161,6 +167,35 @@ export default function Today() {
           onGentle={() => router.push({pathname: '/activity/breathe', params: {minutes: '5'}})}
         />
       </Animated.View>
+
+      {/* ——— Still bothering you? ——— */}
+      {dueNiggle ? (
+        <Animated.View entering={rise(1)}>
+          <Card tone="sunken" style={styles.confirmCard}>
+            <Text style={styles.confirmLabel}>Two weeks on</Text>
+            <Text style={styles.confirmBody}>
+              {`Is your ${BODY_PART_LABELS[dueNiggle.part].toLowerCase()} still bothering you? If you say nothing, the flag clears itself and those movements come back.`}
+            </Text>
+            <View style={styles.confirmRow}>
+              <Button
+                label="Still is"
+                variant="secondary"
+                size="medium"
+                fullWidth={false}
+                style={styles.confirmButton}
+                onPress={() => void confirmNiggle(dueNiggle.id)}
+              />
+              <Button
+                label="Fine now"
+                size="medium"
+                fullWidth={false}
+                style={styles.confirmButton}
+                onPress={() => void clearNiggle(dueNiggle.id)}
+              />
+            </View>
+          </Card>
+        </Animated.View>
+      ) : null}
 
       {/* ——— Back after a gap ——— */}
       {adaptation.layoff !== 'none' && !session && !hasUnfinished ? (
@@ -275,6 +310,12 @@ const styles = StyleSheet.create({
   heroButton: {marginTop: spacing.xl},
 
   readiness: {marginTop: spacing.lg},
+
+  confirmCard: {marginTop: spacing.lg, gap: spacing.xs, borderRadius: radius.md},
+  confirmLabel: {...type.label, color: colors.clay},
+  confirmBody: {...type.small, color: colors.inkSoft},
+  confirmRow: {flexDirection: 'row', gap: spacing.md, marginTop: spacing.md},
+  confirmButton: {flex: 1},
 
   returnCard: {marginTop: spacing.lg, gap: spacing.xs, borderRadius: radius.md},
   returnLabel: {...type.label, color: colors.primary},

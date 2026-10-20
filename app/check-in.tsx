@@ -11,11 +11,21 @@ import {
   SegmentedChoice
 } from '../src/components';
 import {HAIRLINE, MIN_TAP, colors, radius, spacing, type} from '../src/theme';
-import {CheckIn, EquipmentId, Energy, LocationId, Mood, Soreness, TimeBudget} from '../src/types';
+import {
+  BODY_PART_LABELS,
+  CheckIn,
+  EquipmentId,
+  Energy,
+  LocationId,
+  Mood,
+  Soreness,
+  TimeBudget
+} from '../src/types';
 import {useProfileStore} from '../src/store/useProfileStore';
 import {useTodayStore} from '../src/store/useTodayStore';
 import {useHistoryStore} from '../src/store/useHistoryStore';
 import {PAIN_NOTICE} from '../src/engine/planner';
+import {hasExpired} from '../src/engine/niggles';
 import {useReducedMotion} from '../src/hooks/useMotion';
 import {tapSelection} from '../src/lib/haptics';
 
@@ -103,6 +113,14 @@ export default function CheckInScreen() {
 
   const [index, setIndex] = useState(0);
   const [building, setBuilding] = useState(false);
+
+  // What is already being trained around, so the quick screen can say so
+  // rather than making someone open another screen to find out.
+  const niggleSummary = useMemo(() => {
+    const active = (profile?.niggles ?? []).filter(entry => !hasExpired(entry));
+    if (active.length === 0) return '';
+    return active.map(entry => BODY_PART_LABELS[entry.part].toLowerCase()).join(' and ');
+  }, [profile]);
 
   const submit = useCallback(() => {
     if (!profile) return;
@@ -342,6 +360,26 @@ export default function CheckInScreen() {
             </Animated.View>
           ) : null}
 
+          {/* Something tender is a different question from pain that stops
+              you: one routes around a part, the other calls the day off. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              niggleSummary
+                ? `Training around your ${niggleSummary}. Change this`
+                : 'Something tender? Train around it'
+            }
+            onPress={() => router.push('/niggles')}
+            style={styles.niggleRow}
+          >
+            <Text style={styles.niggleText} numberOfLines={2}>
+              {niggleSummary
+                ? `Training around your ${niggleSummary}`
+                : 'Something tender? Train around it'}
+            </Text>
+            <Text style={styles.carriedAction}>{niggleSummary ? 'Change' : 'Flag it'}</Text>
+          </Pressable>
+
           {/* What is being reused, stated plainly, and changeable in one tap. */}
           <Pressable
             accessibilityRole="button"
@@ -498,6 +536,17 @@ const styles = StyleSheet.create({
   },
   painBoxOn: {backgroundColor: colors.caution, borderColor: colors.caution},
   painLabel: {...type.small, color: colors.ink, flex: 1},
+
+  niggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: MIN_TAP
+  },
+  niggleText: {...type.small, color: colors.inkSoft, flex: 1},
 
   carriedRow: {
     flexDirection: 'row',

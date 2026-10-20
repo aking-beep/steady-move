@@ -14,6 +14,7 @@ import {
   Goal,
   Level,
   LocationId,
+  Niggle,
   Profile,
   Session,
   Settings,
@@ -23,6 +24,7 @@ import {
   defaultSettings
 } from '../types';
 import {localDateKey} from './date';
+import {BODY_PARTS} from '../types';
 
 /** Bump when a stored shape changes incompatibly, and add a migration below. */
 export const STORAGE_VERSION = 1;
@@ -107,8 +109,39 @@ export function parseProfile(value: unknown): Profile | null {
     excluded: Array.isArray(value.excluded)
       ? value.excluded.filter((id: unknown): id is string => typeof id === 'string').slice(0, 200)
       : [],
+    niggles: parseNiggles(value.niggles),
     createdAt: value.createdAt
   };
+}
+
+/**
+ * Flagged body parts. An unreadable entry is dropped rather than guessed at:
+ * a half-parsed niggle would silently remove movements for a reason nobody
+ * could explain.
+ */
+export function parseNiggles(value: unknown): Niggle[] {
+  if (!Array.isArray(value)) return [];
+  const out: Niggle[] = [];
+
+  for (const entry of value.slice(0, 20)) {
+    if (!isRecord(entry)) continue;
+    const {id, part, startedAt, confirmedAt} = entry;
+    if (typeof id !== 'string' || typeof part !== 'string') continue;
+    if (!(BODY_PARTS as readonly string[]).includes(part)) continue;
+    if (typeof startedAt !== 'string' || Number.isNaN(new Date(startedAt).getTime())) continue;
+
+    out.push({
+      id,
+      part: part as Niggle['part'],
+      startedAt,
+      confirmedAt:
+        typeof confirmedAt === 'string' && !Number.isNaN(new Date(confirmedAt).getTime())
+          ? confirmedAt
+          : startedAt
+    });
+  }
+
+  return out;
 }
 
 export function parseSettings(value: unknown): Settings {

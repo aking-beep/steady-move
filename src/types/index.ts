@@ -147,6 +147,12 @@ export interface Profile {
    * a movement they dislike. Competitors let you swap once; this remembers.
    */
   excluded: string[];
+  /**
+   * Parts of the body to route around today. Every movement that asks
+   * something of a flagged part is left out of the session, and the flag
+   * expires on its own if nobody confirms it.
+   */
+  niggles: Niggle[];
   /** ISO timestamp of when onboarding was completed. */
   createdAt: string;
 }
@@ -192,6 +198,57 @@ export type ExerciseCategory =
   | 'mobility'
   | 'stretch'
   | 'breathing';
+
+/**
+ * Where a niggle lives. Joints and regions rather than muscles, because what
+ * people report is "my shoulder", and because the thing to route around is a
+ * movement, not a muscle.
+ */
+export type BodyPart =
+  | 'neck'
+  | 'shoulder'
+  | 'elbow'
+  | 'wrist'
+  | 'back'
+  | 'hip'
+  | 'knee'
+  | 'ankle';
+
+export const BODY_PARTS: BodyPart[] = [
+  'neck',
+  'shoulder',
+  'elbow',
+  'wrist',
+  'back',
+  'hip',
+  'knee',
+  'ankle'
+];
+
+export const BODY_PART_LABELS: Record<BodyPart, string> = {
+  neck: 'Neck',
+  shoulder: 'Shoulder',
+  elbow: 'Elbow',
+  wrist: 'Wrist or hand',
+  back: 'Lower back',
+  hip: 'Hip',
+  knee: 'Knee',
+  ankle: 'Ankle or foot'
+};
+
+/**
+ * Something tender that the person wants trained around rather than trained
+ * through. Deliberately not called an injury: it is a filter on a movement
+ * library, not a diagnosis, and the app has no business implying otherwise.
+ */
+export interface Niggle {
+  id: string;
+  part: BodyPart;
+  /** ISO timestamp of when it was first flagged. */
+  startedAt: string;
+  /** ISO timestamp of the last time the person said it was still true. */
+  confirmedAt: string;
+}
 
 export type MovementPattern =
   | 'squat'
@@ -400,6 +457,7 @@ export const defaultProfile: Profile = {
   timePreference: 20,
   weeklyTarget: 4,
   excluded: [],
+  niggles: [],
   createdAt: ''
 };
 
