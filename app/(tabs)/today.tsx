@@ -6,7 +6,9 @@ import {ArrowUpRight, Camera, Footprints, Heart, Timer as TimerIcon, Wind} from 
 import {
   Button,
   Card,
+  CategoryTiles,
   ReadinessCard,
+  ScoreDial,
   ScreenContainer,
   SectionHeader,
   Stat
@@ -35,6 +37,7 @@ import {INTENSITY_LABEL} from '../../src/engine/planner';
 import {readAdaptation} from '../../src/engine/adaptation';
 import {readReadiness} from '../../src/engine/load';
 import {dueForConfirming} from '../../src/engine/niggles';
+import {moveScore} from '../../src/engine/score';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 
 const QUICK_ICONS: Record<string, React.ReactNode> = {
@@ -70,6 +73,11 @@ export default function Today() {
   const readiness = useMemo(() => readReadiness({history: logs, checkIn}), [logs, checkIn]);
   // A flag that has been filtering for a fortnight has to earn its place again.
   const dueNiggle = useMemo(() => dueForConfirming(profile?.niggles), [profile]);
+  // The day's number, and the three parts it is made of.
+  const score = useMemo(
+    () => (profile ? moveScore({history: logs, profile, checkIn}) : null),
+    [checkIn, logs, profile]
+  );
   const weeklyTarget = profile?.weeklyTarget ?? 4;
   const hasUnfinished = Boolean(activeSession && activeStartedAt);
 
@@ -140,6 +148,18 @@ export default function Today() {
         <Text style={styles.greeting}>{greeting()}</Text>
         <Text style={styles.date}>{today}</Text>
       </View>
+
+      {/* ——— The day's number ——— */}
+      {score ? (
+        <Animated.View entering={rise(0)} style={styles.scoreBlock}>
+          <ScoreDial score={score} size={168} onPress={() => router.push('/score')} />
+          <CategoryTiles
+            categories={score.categories}
+            onPress={() => router.push('/score')}
+            style={styles.scoreTiles}
+          />
+        </Animated.View>
+      ) : null}
 
       {/* ——— Hero ——— */}
       <Animated.View entering={rise(0)}>
@@ -301,6 +321,9 @@ const styles = StyleSheet.create({
   head: {paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xs},
   greeting: {...type.label, color: colors.inkFaint},
   date: {...type.title, color: colors.ink},
+
+  scoreBlock: {alignItems: 'center', gap: spacing.xl, marginBottom: spacing.xxl},
+  scoreTiles: {alignSelf: 'stretch'},
 
   hero: {padding: spacing.xxl, borderRadius: radius.xl},
   heroLabel: {...type.label, color: colors.sage},

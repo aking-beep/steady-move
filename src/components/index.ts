@@ -11,3 +11,5 @@ export {ExerciseCard} from './ExerciseCard';
 export {ScreenContainer} from './ScreenContainer';
 export {OnboardingStep} from './OnboardingStep';
 export {ReadinessCard, AreaBalance} from './Readiness';
+export {ScoreDial, CategoryTiles, FactorList, TrendBars, MetricRow} from './Score';
+export type {TrendPoint} from './Score';
