@@ -3,7 +3,14 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Animated, {FadeInDown} from 'react-native-reanimated';
 import {ArrowUpRight, Camera, Footprints, Heart, Timer as TimerIcon, Wind} from 'lucide-react-native';
-import {Button, Card, ScreenContainer, SectionHeader, Stat} from '../../src/components';
+import {
+  Button,
+  Card,
+  ReadinessCard,
+  ScreenContainer,
+  SectionHeader,
+  Stat
+} from '../../src/components';
 import {
   HAIRLINE,
   MIN_TAP,
@@ -25,6 +32,7 @@ import {buildExploreSession} from '../../src/lib/sessions';
 import {EXPLORE_ITEMS, QUICK_MOVE_IDS} from '../../src/data/explore';
 import {INTENSITY_LABEL} from '../../src/engine/planner';
 import {readAdaptation} from '../../src/engine/adaptation';
+import {readReadiness} from '../../src/engine/load';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 
 const QUICK_ICONS: Record<string, React.ReactNode> = {
@@ -52,6 +60,9 @@ export default function Today() {
     () => readAdaptation({history: logs, profile}),
     [logs, profile]
   );
+  // Readiness from what the person has done and said — no watch, no score, and
+  // it works on the second day rather than the fifteenth.
+  const readiness = useMemo(() => readReadiness({history: logs, checkIn}), [logs, checkIn]);
   const weeklyTarget = profile?.weeklyTarget ?? 4;
   const hasUnfinished = Boolean(activeSession && activeStartedAt);
 
@@ -137,6 +148,15 @@ export default function Today() {
             icon={<ArrowUpRight size={17} color={colors.primary} strokeWidth={2.2} />}
           />
         </Card>
+      </Animated.View>
+
+      {/* ——— How today reads ——— */}
+      <Animated.View entering={rise(1)}>
+        <ReadinessCard
+          readiness={readiness}
+          style={styles.readiness}
+          onGentle={() => router.push({pathname: '/activity/breathe', params: {minutes: '5'}})}
+        />
       </Animated.View>
 
       {/* ——— Back after a gap ——— */}
@@ -250,6 +270,8 @@ const styles = StyleSheet.create({
   heroMeta: {...type.caption, color: colors.sage, marginTop: spacing.sm, ...tabular},
   heroBody: {...type.small, color: 'rgba(242,239,231,0.72)', marginTop: spacing.sm},
   heroButton: {marginTop: spacing.xl},
+
+  readiness: {marginTop: spacing.lg},
 
   returnCard: {marginTop: spacing.lg, gap: spacing.xs, borderRadius: radius.md},
   returnLabel: {...type.label, color: colors.primary},

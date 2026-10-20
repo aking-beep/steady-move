@@ -184,8 +184,19 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
     const exerciseIds = exerciseBlockIds(session);
     const blocksTotal = exerciseIds.length;
-    const blocksCompleted = completed.filter(id => exerciseIds.includes(id)).length;
+    const completedBlockIds = completed.filter(id => exerciseIds.includes(id));
+    const blocksCompleted = completedBlockIds.length;
     const now = new Date();
+
+    // The movements actually performed, so the engine can let a loaded area
+    // recover later without asking anyone to log a set.
+    const performed = Array.from(
+      new Set(
+        session.blocks
+          .filter(block => completedBlockIds.includes(block.id) && block.exerciseId)
+          .map(block => block.exerciseId as string)
+      )
+    );
 
     return {
       id: `log-${now.getTime()}`,
@@ -201,6 +212,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       // Counting movement rather than clock time is fairer: finishing every
       // exercise early still means the session was done.
       qualifies: blocksTotal > 0 && blocksCompleted / blocksTotal >= QUALIFYING_RATIO,
+      exerciseIds: performed,
       ...extras
     };
   },

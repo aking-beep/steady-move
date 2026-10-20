@@ -155,7 +155,10 @@ export function parseLog(value: unknown): WorkoutLog | null {
     qualifies: boolOr(value.qualifies, false),
     feel: typeof value.feel === 'string' && (FEEL as readonly string[]).includes(value.feel) ? (value.feel as WorkoutLog['feel']) : undefined,
     effort: typeof value.effort === 'string' && (EFFORT as readonly string[]).includes(value.effort) ? (value.effort as WorkoutLog['effort']) : undefined,
-    note: typeof value.note === 'string' ? value.note.slice(0, 500) : undefined
+    note: typeof value.note === 'string' ? value.note.slice(0, 500) : undefined,
+    exerciseIds: Array.isArray(value.exerciseIds)
+      ? value.exerciseIds.filter((id: unknown): id is string => typeof id === 'string').slice(0, 60)
+      : undefined
   };
 }
 

@@ -18,12 +18,15 @@
 import {
   Activity,
   Adaptation,
+  BODY_AREA_LABELS,
   CheckIn,
   Exercise,
+  BodyArea,
   Intensity,
   LocationId,
   MovementPattern,
   Profile,
+  Readiness,
   Session,
   SessionBlock,
   SessionType,
@@ -43,6 +46,15 @@ import {
 } from '../data/exercises';
 import {allocate, allocateCapped, phaseBudgets} from './duration';
 import {readAdaptation} from './adaptation';
+import {
+  BUSY_WEEK_DAYS,
+  LONG_RUN_DAYS,
+  areasFor,
+  freshestAreas,
+  readReadiness,
+  workedAreas
+} from './load';
+import {annotate, readFamiliarity} from './familiarity';
 import {buildRunWalkBlocks} from './runwalk';
 
 export interface PlanInput {
@@ -243,6 +255,43 @@ function buildRationale(checkIn: CheckIn, intensity: Intensity, type: SessionTyp
   return `${reported}, so today stays productive without pushing intensity.`;
 }
 
+/**
+ * What the recent week adds to the explanation, over and above what the person
+ * told us in the check-in. Silent unless there is something the check-in could
+ * not have known: a long run of days, a busy week, or an area that has had
+ * enough lately for the session to start somewhere else.
+ */
+function readinessNote(readiness: Readiness, painFlagged: boolean): string | undefined {
+  if (painFlagged) return undefined;
+
+  const parts: string[] = [];
+
+  if (readiness.restAdvised) {
+    parts.push(
+      readiness.consecutiveDays >= LONG_RUN_DAYS
+        ? `That is ${readiness.consecutiveDays} days in a row, so a rest day would serve you at least as well as this one — it is here if you want it, not because you owe it.`
+        : `You have moved ${readiness.daysInLastWeek} of the last 7 days, so a rest day would serve you at least as well as this one — it is here if you want it, not because you owe it.`
+    );
+  } else if (readiness.consecutiveDays >= LONG_RUN_DAYS) {
+    parts.push(
+      `This is day ${readiness.consecutiveDays + 1} in a row, so it stays on the easier side to protect the run.`
+    );
+  } else if (readiness.daysInLastWeek >= BUSY_WEEK_DAYS) {
+    parts.push(
+      `You have moved ${readiness.daysInLastWeek} of the last 7 days, so today holds steady rather than adding to it.`
+    );
+  }
+
+  const worked = workedAreas(readiness.load);
+  if (worked.length) {
+    parts.push(
+      `${BODY_AREA_LABELS[worked[0]]} had the most of your recent work, so this starts elsewhere.`
+    );
+  }
+
+  return parts.length ? parts.join(' ') : undefined;
+}
+
 // ——— Block helpers ——————————————————————————————————————————————————————
 
 function toBlock(
@@ -293,8 +342,17 @@ const PATTERN_ORDER: Exercise['movementPattern'][] = [
  * Picks `count` distinct movements, taking one pattern at a time so the
  * circuit stays balanced. Falls back to repeating the pool as extra rounds when
  * the available library is smaller than the session needs.
+ *
+ * `freshFirst` reorders the patterns so the least recently worked areas come
+ * up first. Three leg sessions in a row is the most common way an adaptive app
+ * quietly overreaches, and this is what stops it.
  */
-function pickMovements(pool: Exercise[], count: number, offset: number): Exercise[] {
+function pickMovements(
+  pool: Exercise[],
+  count: number,
+  offset: number,
+  freshFirst?: BodyArea[]
+): Exercise[] {
   const byPattern = new Map<string, Exercise[]>();
   for (const exercise of pool) {
     const list = byPattern.get(exercise.movementPattern) ?? [];
@@ -302,10 +360,27 @@ function pickMovements(pool: Exercise[], count: number, offset: number): Exercis
     byPattern.set(exercise.movementPattern, list);
   }
 
-  const patterns = [
+  let patterns = [
     ...PATTERN_ORDER.filter(p => byPattern.has(p)),
     ...Array.from(byPattern.keys()).filter(p => !PATTERN_ORDER.includes(p as Exercise['movementPattern']))
   ];
+
+  if (freshFirst?.length) {
+    // Rank each pattern by the freshest area it touches, keeping the balanced
+    // default order as the tie-breaker.
+    const rankOf = (pattern: string): number => {
+      const sample = byPattern.get(pattern)?.[0];
+      if (!sample) return freshFirst.length;
+      const ranks = areasFor(sample)
+        .map(area => freshFirst.indexOf(area))
+        .filter(rank => rank >= 0);
+      return ranks.length ? Math.min(...ranks) : freshFirst.length;
+    };
+    patterns = [...patterns]
+      .map((pattern, index) => ({pattern, index, rank: rankOf(pattern)}))
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)
+      .map(entry => entry.pattern);
+  }
 
   const chosen: Exercise[] = [];
   const taken = new Set<string>();
@@ -484,6 +559,11 @@ export function generateSession(input: PlanInput): Session {
   const adaptation =
     input.adaptation ?? readAdaptation({history, profile, now});
 
+  // How today reads, and which areas have had the least lately so the session
+  // can go there first. Both come off the same decayed per-area picture.
+  const readiness = readReadiness({history, checkIn, now});
+  const freshFirst = freshestAreas(readiness.load);
+
   const budgets = phaseBudgets(checkIn.minutes);
   const painFlagged = checkIn.pain;
   const needsRecovery = painFlagged || (checkIn.energy === 'low' && checkIn.soreness === 'sore');
@@ -582,7 +662,7 @@ export function generateSession(input: PlanInput): Session {
     }
 
     const shape = circuitShape(budgets.move);
-    const movements = pickMovements(pool, shape.movements, variant);
+    const movements = pickMovements(pool, shape.movements, variant, freshFirst);
     move = buildCircuit(movements, shape.rounds, budgets.move, intensity, 'move');
   }
 
@@ -628,6 +708,20 @@ export function generateSession(input: PlanInput): Session {
 
   const blocks = [...arrive, ...warmup, ...move, ...reset, ...reflect];
 
+  // What they already know, and the next step if they have earned it. This
+  // annotates; it never changes a movement or a second of the plan.
+  annotate(
+    blocks,
+    Object.fromEntries(
+      blocks
+        .filter(block => block.exerciseId)
+        .map(block => [block.exerciseId as string, getExercise(block.exerciseId as string)])
+    ),
+    readFamiliarity(history, now),
+    intensity,
+    profile.level
+  );
+
   // Link each block to the next by name, so the rest screen can preview it.
   for (let i = 0; i < blocks.length - 1; i++) blocks[i].nextName = blocks[i + 1].name;
   blocks[blocks.length - 1].nextName = undefined;
@@ -640,7 +734,12 @@ export function generateSession(input: PlanInput): Session {
     type,
     title: painFlagged ? 'Gentle Reset' : (input.titleOverride ?? SESSION_TITLES[type]),
     focus: painFlagged ? 'Breathing and body awareness only' : SESSION_FOCUS[type],
-    rationale: [buildRationale(checkIn, intensity, type), adaptation.note, input.placeNote]
+    rationale: [
+      buildRationale(checkIn, intensity, type),
+      readinessNote(readiness, painFlagged),
+      adaptation.note,
+      input.placeNote
+    ]
       .filter(Boolean)
       .join(' '),
     intensity,
@@ -652,7 +751,8 @@ export function generateSession(input: PlanInput): Session {
     painFlagged,
     variant,
     constraints,
-    adaptation
+    adaptation,
+    readiness
   };
 }
 

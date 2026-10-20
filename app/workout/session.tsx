@@ -219,6 +219,14 @@ export default function SessionPlayer() {
             <Text style={styles.instructions}>{block.instructions}</Text>
 
             {block.effortNote ? <Text style={styles.effort}>{block.effortNote}</Text> : null}
+            {block.stepNote ? (
+              <Text style={styles.step}>
+                <Text style={styles.stepLabel}>
+                  {block.stepDirection === 'progress' ? 'Ready for more  ' : 'Easier option  '}
+                </Text>
+                {block.stepNote}
+              </Text>
+            ) : null}
             {block.perSide ? <Text style={styles.effort}>Swap sides halfway through.</Text> : null}
 
             <View style={styles.inlineActions}>
@@ -374,6 +382,14 @@ const styles = StyleSheet.create({
   instructionScroll: {alignSelf: 'stretch', marginTop: spacing.sm, flexGrow: 0, maxHeight: 220},
   instructionContent: {alignItems: 'center', paddingBottom: spacing.md},
   instructions: {...type.body, color: dark.inkMuted, textAlign: 'center', maxWidth: 330},
+  step: {
+    ...type.caption,
+    color: dark.inkFaint,
+    textAlign: 'center',
+    maxWidth: 330,
+    marginTop: spacing.md
+  },
+  stepLabel: {...type.label, color: progressColor(dark)},
   effort: {...type.caption, color: dark.inkFaint, textAlign: 'center', marginTop: spacing.sm},
 
   inlineActions: {flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.sm},

@@ -2,7 +2,15 @@ import React, {useMemo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Check} from 'lucide-react-native';
-import {Button, Card, EmptyState, ScreenContainer, SectionHeader, Stat} from '../../src/components';
+import {
+  AreaBalance,
+  Button,
+  Card,
+  EmptyState,
+  ScreenContainer,
+  SectionHeader,
+  Stat
+} from '../../src/components';
 import {HAIRLINE, TAB_BAR_INSET, colors, radius, spacing, tabular, type} from '../../src/theme';
 import {SessionType} from '../../src/types';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -10,6 +18,7 @@ import {useProfileStore} from '../../src/store/useProfileStore';
 import {getProgress, progressMessage} from '../../src/lib/progress';
 import {relativeDay} from '../../src/lib/date';
 import {formatDuration} from '../../src/engine/duration';
+import {loadByArea} from '../../src/engine/load';
 
 const TYPE_LABELS: Record<SessionType, string> = {
   strength: 'Strength',
@@ -27,6 +36,7 @@ export default function Progress() {
   const profile = useProfileStore(state => state.profile);
 
   const summary = useMemo(() => getProgress(logs), [logs]);
+  const load = useMemo(() => loadByArea(logs), [logs]);
   const weeklyTarget = profile?.weeklyTarget ?? 4;
 
   return (
@@ -89,6 +99,20 @@ export default function Progress() {
           ))}
         </View>
       </Card>
+
+      {/* ——— Balance across the body ——— */}
+      <SectionHeader
+        title="Balance"
+        subtitle="What your recent sessions have asked of each area, newest work weighing heaviest. Today's session starts with whatever has had the least."
+      />
+      {summary.totalSessions === 0 ? (
+        <EmptyState
+          title="Nothing to balance yet"
+          body="After a session or two this shows which areas have had the most lately, and which are waiting."
+        />
+      ) : (
+        <AreaBalance load={load} />
+      )}
 
       {/* ——— What you did this week ——— */}
       <SectionHeader title="This week by type" />

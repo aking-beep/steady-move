@@ -86,6 +86,27 @@ export const PLACE_IDS: PlaceId[] = [
  */
 export type LayoffState = 'none' | 'easing' | 'returning';
 
+/**
+ * How ready today looks. Four plain states rather than a score out of a
+ * hundred, because a number implies a precision that self-report and training
+ * history cannot support.
+ */
+export type ReadinessState = 'ready' | 'steady' | 'ease' | 'rest';
+
+export interface Readiness {
+  state: ReadinessState;
+  /** One sentence saying why, in terms the person can check against reality. */
+  reason: string;
+  /** Consecutive days up to and including yesterday with a qualifying session. */
+  consecutiveDays: number;
+  /** Qualifying days in the last seven. */
+  daysInLastWeek: number;
+  /** Recent load per area, decayed by how long ago it was. 0 is fully rested. */
+  load: Record<BodyArea, number>;
+  /** True when today looks more like a rest day than a training day. */
+  restAdvised: boolean;
+}
+
 /** What recent sessions say about how the next one should be pitched. */
 export interface Adaptation {
   layoff: LayoffState;
@@ -192,6 +213,24 @@ export type Difficulty = 1 | 2 | 3;
 export type EffortLabel = 'easy' | 'moderate' | 'hard';
 
 /**
+ * Coarse body areas, used to keep a week balanced and to let a loaded area
+ * recover. Deliberately coarse: this is not a muscle map, and pretending to
+ * that precision from movement patterns alone would be dishonest.
+ */
+export type BodyArea = 'legs' | 'push' | 'pull' | 'core' | 'aerobic' | 'restorative';
+
+export const BODY_AREAS: BodyArea[] = ['legs', 'push', 'pull', 'core', 'aerobic', 'restorative'];
+
+export const BODY_AREA_LABELS: Record<BodyArea, string> = {
+  legs: 'Legs',
+  push: 'Pushing',
+  pull: 'Pulling',
+  core: 'Core',
+  aerobic: 'Aerobic',
+  restorative: 'Restorative'
+};
+
+/**
  * How much room a movement needs. Ordered: a place that allows `floor` allows
  * everything, a place that only allows `seated` allows the least.
  */
@@ -272,6 +311,14 @@ export interface SessionBlock {
   effortNote?: string;
   /** Name of the block that follows, shown during rest. */
   nextName?: string;
+  /** "4th time this month · last 3 days ago", from completed sessions only. */
+  practiceNote?: string;
+  /** Completed sessions in the last four weeks that included this movement. */
+  familiarTimes?: number;
+  /** Whether the optional step offered is the harder or the easier one. */
+  stepDirection?: 'progress' | 'regress';
+  /** The movement's own wording for that step. Always optional, never applied. */
+  stepNote?: string;
 }
 
 export interface Session {
@@ -301,6 +348,8 @@ export interface Session {
   constraints?: SpaceConstraints;
   /** What the recent past contributed, kept so the UI can explain it. */
   adaptation?: Adaptation;
+  /** How today reads, kept so the preview can say it in the same words. */
+  readiness?: Readiness;
 }
 
 // ——— History ———————————————————————————————————————————————————————————
@@ -330,6 +379,12 @@ export interface WorkoutLog {
   feel?: Feel;
   effort?: EffortRating;
   note?: string;
+  /**
+   * Movements actually completed. Recorded so the engine can let a loaded
+   * area recover, and so the app can say when you last did something —
+   * without asking anyone to log a single set.
+   */
+  exerciseIds?: string[];
 }
 
 /** A session counts towards streaks once at least this share of it is done. */

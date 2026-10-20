@@ -82,6 +82,7 @@ export default function Breathe() {
       activeSeconds: elapsed,
       blocksCompleted: 1,
       blocksTotal: 1,
+      exerciseIds: ['breath-counted'],
       qualifies: length >= QUALIFYING_MINUTES && elapsed >= total * 0.7
     };
 

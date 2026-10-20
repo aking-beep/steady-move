@@ -26,6 +26,7 @@ export function ExerciseCard({block, done = false, current = false, hideDuration
       accessibilityLabel={[
         block.name,
         block.round ? `round ${block.round}` : '',
+        block.practiceNote ?? '',
         detail,
         done ? 'completed' : '',
         current ? 'current' : ''
@@ -47,6 +48,7 @@ export function ExerciseCard({block, done = false, current = false, hideDuration
           {block.name}
           {block.round ? <Text style={styles.round}>{`  ·  round ${block.round}`}</Text> : null}
         </Text>
+        {block.practiceNote ? <Text style={styles.practice}>{block.practiceNote}</Text> : null}
         {block.perSide ? <Text style={styles.meta}>Both sides</Text> : null}
         {block.effortNote ? <Text style={styles.meta}>{block.effortNote}</Text> : null}
       </View>
@@ -79,6 +81,7 @@ const styles = StyleSheet.create({
   nameCurrent: {fontFamily: type.bodyStrong.fontFamily, color: colors.primary},
   round: {...type.caption, color: colors.inkFaint},
   meta: {...type.caption, color: colors.inkFaint},
+  practice: {...type.caption, color: colors.sage},
   detail: {...type.caption, ...tabular, color: colors.inkSoft},
   detailCurrent: {color: colors.primary}
 });
