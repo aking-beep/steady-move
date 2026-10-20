@@ -65,6 +65,8 @@ export default function RootLayout() {
           {/* The player owns the back gesture so a workout is never swiped away. */}
           <Stack.Screen name="workout/session" options={{gestureEnabled: false}} />
           <Stack.Screen name="workout/complete" options={{gestureEnabled: false}} />
+          <Stack.Screen name="space/index" />
+          <Stack.Screen name="space/scan" />
           <Stack.Screen name="activity/breathe" options={{animation: 'fade'}} />
         </Stack>
       </SafeAreaProvider>

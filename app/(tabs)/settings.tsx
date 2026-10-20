@@ -1,9 +1,10 @@
 import React, {useCallback, useState} from 'react';
-import {Alert, Pressable, StyleSheet, Switch, Text, View} from 'react-native';
+import {Alert, Pressable, StyleSheet, Switch, Text, TextInput, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Constants from 'expo-constants';
 import {ChevronRight} from 'lucide-react-native';
 import {Button, Card, ScreenContainer, SectionHeader, SegmentedChoice} from '../../src/components';
+import {maskKey} from '../../src/lib/secrets';
 import {TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
 import {Activity, EquipmentId, Goal, Level, TimePreference} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
@@ -73,7 +74,13 @@ export default function Settings() {
   const clearToday = useTodayStore(state => state.clearToday);
   const abandonSession = useSessionStore(state => state.abandon);
 
+  const apiKey = useProfileStore(state => state.apiKey);
+  const secureStorage = useProfileStore(state => state.secureStorage);
+  const setApiKey = useProfileStore(state => state.setApiKey);
+
   const [tapCount, setTapCount] = useState(0);
+  const [keyDraft, setKeyDraft] = useState('');
+  const [editingKey, setEditingKey] = useState(false);
 
   const version = Constants.expoConfig?.version ?? '0.1.0';
 
@@ -212,6 +219,84 @@ export default function Settings() {
         />
       </Card>
 
+      {/* ——— Photo analysis ——— */}
+      <SectionHeader
+        title="Photo analysis"
+        subtitle="Optional, and off until you add a key"
+      />
+
+      <Card style={styles.block}>
+        <Text style={styles.help}>
+          Scanning your space sends that one photo to Claude using your own API key, to work out
+          what equipment and room you have. Steady Move never stores the photo, and the session
+          itself is still built on this device from its own movement library — the analysis only
+          decides which movements are available to it.
+        </Text>
+
+        {editingKey ? (
+          <>
+            <TextInput
+              value={keyDraft}
+              onChangeText={setKeyDraft}
+              placeholder="sk-ant-..."
+              placeholderTextColor={colors.inkFaint}
+              style={styles.keyInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              accessibilityLabel="Claude API key"
+            />
+            <Button
+              label="Save key"
+              onPress={async () => {
+                await setApiKey(keyDraft);
+                setKeyDraft('');
+                setEditingKey(false);
+              }}
+            />
+            <Button label="Cancel" variant="ghost" onPress={() => {
+              setKeyDraft('');
+              setEditingKey(false);
+            }} />
+          </>
+        ) : (
+          <>
+            <Text style={styles.keyState}>
+              {apiKey ? `Key set · ${maskKey(apiKey)}` : 'No key set — photo analysis is off'}
+            </Text>
+            <Button
+              label={apiKey ? 'Replace key' : 'Add a key'}
+              variant="secondary"
+              onPress={() => setEditingKey(true)}
+            />
+            {apiKey ? (
+              <Button
+                label="Remove key"
+                variant="ghost"
+                onPress={() => {
+                  Alert.alert('Remove the API key?', 'Photo analysis will be turned off.', [
+                    {text: 'Cancel', style: 'cancel'},
+                    {
+                      text: 'Remove',
+                      style: 'destructive',
+                      onPress: async () => {
+                        await setApiKey('');
+                      }
+                    }
+                  ]);
+                }}
+              />
+            ) : null}
+          </>
+        )}
+
+        <Text style={styles.help}>
+          {secureStorage
+            ? 'The key is kept in this device\u2019s secure keystore.'
+            : 'On this platform there is no secure keystore, so the key is kept in ordinary local storage.'}
+        </Text>
+      </Card>
+
       {/* ——— Data ——— */}
       <SectionHeader title="Your data" />
 
@@ -219,7 +304,9 @@ export default function Settings() {
         <Text style={styles.privacyTitle}>Everything stays here</Text>
         <Text style={styles.privacyBody}>
           Steady Move has no account, no server and no analytics. Your profile, check-ins and
-          sessions are stored on this device only, and deleting the app removes them.
+          sessions are stored on this device only, and deleting the app removes them. The one
+          thing that ever leaves this device is a photo you choose to scan, and only if you have
+          added your own API key above.
         </Text>
       </Card>
 
@@ -355,6 +442,18 @@ const styles = StyleSheet.create({
   toggleText: {flex: 1, gap: 2},
   toggleLabel: {...type.bodyStrong, color: colors.ink},
   divider: {height: StyleSheet.hairlineWidth, backgroundColor: colors.border},
+
+  keyInput: {
+    ...type.body,
+    color: colors.ink,
+    backgroundColor: colors.canvas,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: MIN_TAP + 6
+  },
+  keyState: {...type.bodyStrong, color: colors.ink},
 
   privacy: {gap: spacing.sm, backgroundColor: colors.sageSoft},
   privacyTitle: {...type.subheading, color: colors.primary},

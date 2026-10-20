@@ -10,7 +10,9 @@
     "newArchEnabled": true,
     "backgroundColor": "#F5F2EB",
     "primaryColor": "#1F3D30",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "package": "com.steadymove.app",
       "versionCode": 1,
@@ -27,7 +29,12 @@
       "bundleIdentifier": "com.steadymove.app",
       "buildNumber": "1"
     },
-    "web": {"name": "Steady Move", "favicon": "./assets/favicon.png", "bundler": "metro", "output": "single"},
+    "web": {
+      "name": "Steady Move",
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
     "plugins": [
       "expo-router",
       [
@@ -38,11 +45,20 @@
           "resizeMode": "contain",
           "backgroundColor": "#F5F2EB"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Steady Move uses a photo of your space to work out what equipment and room you have.",
+          "cameraPermission": "Steady Move uses a photo of your space to work out what equipment and room you have."
+        }
       ]
     ],
-    "experiments": {"typedRoutes": false},
+    "experiments": {
+      "typedRoutes": false
+    },
     "extra": {
-      "privacy": "All data stays on this device. No account, no network calls, no analytics."
+      "privacy": "All data stays on this device. No account, no analytics. The only thing that ever leaves the device is a photo you explicitly choose to scan, sent to Claude with your own API key."
     }
   }
 }

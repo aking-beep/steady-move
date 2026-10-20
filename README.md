@@ -99,6 +99,21 @@ real session immediately.
 **The check-in** is seven steps: energy, mood, soreness, pain, time, location
 and equipment to hand. It takes about fifteen seconds.
 
+**Your space** handles the days you are not where you usually are. Pick a
+place — hotel room, office or desk, airport or station, park, a small space,
+home, gym — and the session is built for what that place actually allows: how
+much room there is, whether people are around, and whether the floor below
+matters. An airport session is a walk between gates plus stretches that look
+unremarkable at a departure gate; a hotel room session never includes anything
+that thuds; an office session never puts you on the floor. You can also say
+what you want from it (loosen up, get stronger, get moving, settle down), and
+that narrows what the place offers.
+
+**Scan my space** takes that further: photograph the room or your kit, and the
+photo is read for what equipment is visible and how much room there is. See
+*The photo boundary* below for what that does and — more importantly — what it
+does not do.
+
 **The engine** turns that into a session with five parts — *arrive, warm up,
 move, reset, reflect* — that lasts exactly as long as you asked for, rests
 included. The preview explains, in your own reported terms, why you were given
@@ -138,6 +153,45 @@ cannot give.
 
 ---
 
+## The photo boundary
+
+Photo analysis is a **perception** step, not a prescription step. This is the
+single most important design decision in the feature.
+
+The model is shown one photo and asked for a structured answer in a fixed
+vocabulary: which of seven known equipment ids are visible, how much room there
+is, whether people are around, whether impact would disturb someone, and one
+sentence of summary. It is told, explicitly, never to name an exercise.
+
+Whatever comes back is then validated against the app's own vocabulary — the
+same discipline the storage layer uses. Unknown equipment is dropped. An
+unrecognised place becomes `null`. An unrecognised amount of room falls back to
+the cautious option. Bodyweight is always added back. There is nowhere in the
+parsed shape for an exercise to live, so a model that tried to supply one would
+have it discarded, and there is a test that proves exactly that.
+
+The validated constraints are then handed to the same deterministic engine as
+every other session. Which means every existing guarantee survives contact with
+the camera: a `new` user is still only offered difficulty-1 movements, a
+movement is still never prescribed without the equipment for it, and a reported
+pain flag still overrides the whole thing and produces breathing only — whatever
+the photo showed.
+
+The result is also **always shown back for confirmation** before anything is
+built. If the model thought your resistance band was a kettlebell, you fix it in
+one tap. The person has the last word on what is in their room, not the model.
+
+**What this costs you.** Photo analysis is the one part of Steady Move that is
+not offline and not free. It needs your own Claude API key, added in Settings,
+and it is off until you add one. The photo goes to Anthropic and nowhere else;
+Steady Move has no server and does not store the image. Without a key the Scan
+screen still works — it just asks you to tick what you have instead, which is
+still faster than nothing. Everything else in the app remains fully offline.
+
+The key is held in the device keystore via `expo-secure-store`. On web there is
+no keystore, so it falls back to local storage and the Settings screen says so
+rather than implying a safety that is not there.
+
 ## Architecture
 
 ```
@@ -157,14 +211,17 @@ src/
     duration.ts           allocation maths; the parts always sum to the whole
     runwalk.ts            run/walk intervals, by effort rather than pace
   data/
-    exercises.ts          73 movements with cues, regressions, progressions
+    exercises.ts          82 movements with cues, regressions, progressions
     explore.ts            the Explore catalogue
+    places.ts             places, and the constraints each one implies
   store/                  four small zustand stores, hydrated at launch
     useProfileStore       profile, settings, onboarding draft
     useTodayStore         today's check-in and the session built from it
     useSessionStore       the running workout
     useHistoryStore       saved sessions
   lib/                    storage, progress maths, dates, haptics, demo data
+    vision.ts             photo -> structured constraints, strictly validated
+    secrets.ts            the optional API key, in the device keystore
   components/             Button, Card, ChoiceChip, ProgressRing, Timer,
                           BreathingCircle, ExerciseCard, MetricCard,
                           EmptyState, ScreenContainer, SectionHeader
@@ -208,7 +265,7 @@ never throws into the app. "Delete local data" in Settings removes every key.
 
 ### Testing
 
-80 tests across four suites, run with `node:test` against the compiled pure
+96 tests across five suites, run with `node:test` against the compiled pure
 modules:
 
 - `tests/engine.test.cjs` — session length at 10/20/40 minutes, phase structure,
@@ -221,6 +278,10 @@ modules:
   Explore entry building a valid session, and the qualification rule.
 - `tests/storage.test.cjs` — round trips, corruption, version skew and deletion,
   against a stubbed AsyncStorage.
+- `tests/places.test.cjs` — every place's session staying inside its own
+  constraints at every level, pain outranking the place, and the photo boundary:
+  unknown values dropped, bodyweight always available, and a scan being unable
+  to introduce a movement even when the summary text tries to.
 
 Beyond the unit suites, the web build is driven in a headless browser to walk
 the whole journey and assert there are no runtime errors. That is what caught
@@ -250,6 +311,11 @@ to a still frame.
 
 ## Known limitations of this MVP
 
+- **Photo analysis is unverified against the live API.** The perception path
+  is covered by tests on its parsing and its boundary, and the SDK bundles for
+  Android, but no real photo has been sent to Claude from this app — there is no
+  API key in this environment to do it with. The first thing to try on a device
+  is a photo of a real room with a key set.
 - **Not tested on a physical Android device.** The app has been driven end to
   end in a real browser against the web build — onboarding, the check-in, the
   adaptive session, the player including the rest state, completion, progress,

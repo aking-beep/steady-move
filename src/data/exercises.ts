@@ -9,7 +9,7 @@
 // only. The engine gates on this, so a movement is never offered to someone who
 // does not have the kit for it.
 
-import {Exercise, EquipmentId, Level} from '../types';
+import {Exercise, EquipmentId, Level, SPACE_ORDER, SpaceNeed} from '../types';
 
 /** Owning one of these implies the others are on hand. */
 const EQUIPMENT_IMPLIES: Partial<Record<EquipmentId, EquipmentId[]>> = {
@@ -51,6 +51,8 @@ export const WARMUPS: Exercise[] = [
     regression: 'Sit or lie down and simply notice the breath without counting.',
     progression: 'Lengthen the exhale to eight counts.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -67,6 +69,8 @@ export const WARMUPS: Exercise[] = [
     cues: ['Smooth, unhurried circles', 'Both directions', 'Stay inside a comfortable range'],
     regression: 'Do the upper body only, seated.',
     progression: 'Add a slow shift of weight between feet as you circle.',
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -83,6 +87,8 @@ export const WARMUPS: Exercise[] = [
     cues: ['Light, quiet feet', 'Relaxed arms', 'Talkable pace only'],
     regression: 'March seated, lifting one heel at a time.',
     progression: 'Lift the knees a little higher as you warm up.',
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -99,6 +105,7 @@ export const WARMUPS: Exercise[] = [
     cues: ['Knees stay soft', 'Only as far as is comfortable', 'Exhale on the way down'],
     regression: 'Slide the hands down the thighs instead of reaching for the floor.',
     progression: 'Pause at the bottom for two slow breaths.',
+    space: 'standing',
     effort: 'easy'
   },
   {
@@ -116,6 +123,7 @@ export const WARMUPS: Exercise[] = [
     regression: 'Keep the toes lightly on the floor and trace small circles.',
     progression: 'Let go of the wall to add a balance element.',
     perSide: true,
+    space: 'standing',
     effort: 'easy'
   },
   {
@@ -132,6 +140,8 @@ export const WARMUPS: Exercise[] = [
     cues: ['Let the arms be heavy', 'Turn from the ribs', 'Keep the neck relaxed'],
     regression: 'Turn with the hands resting on the chest.',
     progression: 'Add a slow heel lift on each turn.',
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -148,6 +158,7 @@ export const WARMUPS: Exercise[] = [
     cues: ['Go only as low as is comfortable', 'Lift the chest at the bottom', 'Move slowly'],
     regression: 'Hold a chair and sit down a short way instead.',
     progression: 'Reach one arm overhead at the bottom.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -165,6 +176,7 @@ export const WARMUPS: Exercise[] = [
     regression: 'March on the spot instead.',
     progression: 'Add side-to-side swings after the forward ones.',
     perSide: true,
+    space: 'standing',
     effort: 'easy'
   }
 ];
@@ -186,6 +198,8 @@ export const LOWER: Exercise[] = [
     cues: ['Weight through the whole foot', 'Chest stays open', 'Stand to full height'],
     regression: 'Sit all the way down and stand up using your hands on the thighs.',
     progression: 'Hover just above the seat instead of touching it.',
+    space: 'standing',
+    discreet: true,
     effort: 'moderate'
   },
   {
@@ -202,6 +216,7 @@ export const LOWER: Exercise[] = [
     cues: ['Knees track over the toes', 'Chest up', 'Breathe out as you stand'],
     regression: 'Use a chair behind you as a depth target.',
     progression: 'Pause for two seconds at the bottom of each rep.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -219,6 +234,7 @@ export const LOWER: Exercise[] = [
     regression: 'Hold a wall or chair and shorten the step.',
     progression: 'Pause at the bottom before pressing back up.',
     perSide: true,
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -236,6 +252,7 @@ export const LOWER: Exercise[] = [
     regression: 'Hold a wall and reduce the depth.',
     progression: 'Elevate the back foot on a low step.',
     perSide: true,
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -253,6 +270,7 @@ export const LOWER: Exercise[] = [
     regression: 'Lift only a few centimetres and hold briefly.',
     progression: 'Hold the top position for three seconds each rep.',
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -269,6 +287,7 @@ export const LOWER: Exercise[] = [
     cues: ['Hips move back, not down', 'Long spine throughout', 'A small range is plenty'],
     regression: 'Hinge with your back lightly against a wall for feedback.',
     progression: 'Slow the lowering phase to three seconds.',
+    space: 'standing',
     effort: 'easy'
   },
   {
@@ -285,6 +304,8 @@ export const LOWER: Exercise[] = [
     cues: ['Rise all the way up', 'Lower slowly', 'Use the wall for balance only'],
     regression: 'Hold a chair with both hands.',
     progression: 'Perform one leg at a time.',
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -302,6 +323,8 @@ export const LOWER: Exercise[] = [
     regression: 'Keep the toes of the other foot lightly on the floor.',
     progression: 'Try it with the eyes closed, next to a wall.',
     perSide: true,
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -318,6 +341,7 @@ export const LOWER: Exercise[] = [
     cues: ['Hold support as much as you like', 'Heels down if they reach', 'Breathe into the position'],
     regression: 'Sit on a low box or step instead.',
     progression: 'Let go of the support and rest the elbows inside the knees.',
+    space: 'standing',
     effort: 'moderate'
   }
 ];
@@ -339,6 +363,7 @@ export const PUSH: Exercise[] = [
     cues: ['Body in one long line', 'Elbows track back', 'Breathe out as you press'],
     regression: 'Stand closer to the wall.',
     progression: 'Step the feet back a little further.',
+    space: 'standing',
     effort: 'easy'
   },
   {
@@ -355,6 +380,7 @@ export const PUSH: Exercise[] = [
     cues: ['One long line from head to heels', 'Elbows at about 45 degrees', 'Full press at the top'],
     regression: 'Use a higher surface, or a wall.',
     progression: 'Use a lower surface such as a sturdy chair.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -371,6 +397,7 @@ export const PUSH: Exercise[] = [
     cues: ['Hips stay in line, not piked', 'Lower under control', 'Cushion the knees if needed'],
     regression: 'Move to an incline push-up.',
     progression: 'Take the knees off the floor for the last few reps.',
+    space: 'floor',
     effort: 'moderate'
   },
   {
@@ -387,6 +414,7 @@ export const PUSH: Exercise[] = [
     cues: ['Squeeze the glutes to hold the line', 'Elbows back, not flared', 'Stop a rep short of failing'],
     regression: 'Drop to the knees or raise the hands to an incline.',
     progression: 'Slow the lowering phase to three seconds.',
+    space: 'floor',
     effort: 'hard'
   },
   {
@@ -404,6 +432,7 @@ export const PUSH: Exercise[] = [
     regression: 'Put the hands on a raised surface to reduce the load.',
     progression: 'Elevate the feet on a low step.',
     contraindicationNotes: 'Skip this if having the head below the heart feels uncomfortable.',
+    space: 'floor',
     effort: 'hard'
   }
 ];
@@ -425,6 +454,7 @@ export const PULL: Exercise[] = [
     cues: ['Breathe steadily', 'Let the shoulders rise naturally', 'Come down before the grip fails'],
     regression: 'Keep both feet on the ground and take only some of your weight.',
     progression: 'Build the hang a few seconds at a time.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -441,6 +471,7 @@ export const PULL: Exercise[] = [
     cues: ['Arms stay straight', 'Small, controlled movement', 'Shoulders away from the ears'],
     regression: 'Keep the feet on the floor and take some weight.',
     progression: 'Pause for two seconds at the top of each rep.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -457,6 +488,7 @@ export const PULL: Exercise[] = [
     cues: ['Lead with the elbows', 'Chest towards the bar', 'Lower with control'],
     regression: 'Use more help from the legs or band.',
     progression: 'Reduce the assistance a little each session.',
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -473,6 +505,7 @@ export const PULL: Exercise[] = [
     cues: ['Aim for a three to five second lower', 'Shoulders stay engaged', 'Reset between reps'],
     regression: 'Shorten the lower and use the step sooner.',
     progression: 'Extend the lowering to six seconds.',
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -489,6 +522,7 @@ export const PULL: Exercise[] = [
     cues: ['Full range, top to bottom', 'Lead with the elbows', 'Stop a rep short of failing'],
     regression: 'Switch to assisted pull-ups or negatives.',
     progression: 'Add a two-second pause at the top.',
+    space: 'standing',
     effort: 'hard'
   }
 ];
@@ -512,6 +546,7 @@ export const CORE: Exercise[] = [
     progression: 'Extend further and move more slowly.',
     perSide: true,
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -530,6 +565,7 @@ export const CORE: Exercise[] = [
     progression: 'Hold each position for five seconds.',
     perSide: true,
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -546,6 +582,7 @@ export const CORE: Exercise[] = [
     cues: ['Squeeze the glutes', 'Hips level with the shoulders', 'Stop when the form slips'],
     regression: 'Drop to the knees, or put the forearms on a raised surface.',
     progression: 'Add ten seconds to the hold.',
+    space: 'floor',
     effort: 'moderate'
   },
   {
@@ -563,6 +600,7 @@ export const CORE: Exercise[] = [
     regression: 'Bend the knees and hold from there.',
     progression: 'Straighten the top arm towards the ceiling.',
     perSide: true,
+    space: 'floor',
     effort: 'moderate'
   },
   {
@@ -579,6 +617,7 @@ export const CORE: Exercise[] = [
     cues: ['Knees hover, nothing more', 'Back stays flat', 'Breathe through it'],
     regression: 'Hold hands and knees without lifting.',
     progression: 'Add a slow hand lift, alternating sides.',
+    space: 'floor',
     effort: 'hard'
   },
   {
@@ -595,6 +634,8 @@ export const CORE: Exercise[] = [
     cues: ['Hips stay low', 'Steady rhythm over speed', 'Ease off any time'],
     regression: 'Put the hands on a raised surface and slow the pace.',
     progression: 'Hold the pace for an extra fifteen seconds.',
+    space: 'floor',
+    impact: true,
     effort: 'hard'
   },
   {
@@ -612,6 +653,7 @@ export const CORE: Exercise[] = [
     regression: 'Lift the chest only, leaving the legs down.',
     progression: 'Hold each lift for three seconds.',
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   }
 ];
@@ -633,6 +675,7 @@ export const DUMBBELL: Exercise[] = [
     cues: ['Elbows inside the knees', 'Chest stays tall', 'A lighter weight is always fine'],
     regression: 'Drop the weight and do an air squat.',
     progression: 'Pause for two seconds at the bottom.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -649,6 +692,7 @@ export const DUMBBELL: Exercise[] = [
     cues: ['Weights stay close to the legs', 'Long spine throughout', 'Stop where the stretch begins'],
     regression: 'Do the movement without weight first.',
     progression: 'Slow the lowering phase to three seconds.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -666,6 +710,7 @@ export const DUMBBELL: Exercise[] = [
     regression: 'Use a lighter weight and support the other hand on a chair.',
     progression: 'Pause for a second at the top of each rep.',
     perSide: true,
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -682,6 +727,7 @@ export const DUMBBELL: Exercise[] = [
     cues: ['Elbows at about 45 degrees', 'Press smoothly', 'Keep the ribs down'],
     regression: 'Use one dumbbell at a time, or a lighter weight.',
     progression: 'Pause briefly when the arms touch the floor.',
+    space: 'floor',
     effort: 'moderate'
   },
   {
@@ -699,6 +745,7 @@ export const DUMBBELL: Exercise[] = [
     regression: 'Press one arm at a time, seated with back support.',
     progression: 'Slow the lowering phase.',
     contraindicationNotes: 'Choose the floor press instead if overhead reaching is uncomfortable.',
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -716,6 +763,7 @@ export const DUMBBELL: Exercise[] = [
     regression: 'Do the lunge without weight, holding a wall.',
     progression: 'Pause at the bottom of each rep.',
     perSide: true,
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -732,6 +780,7 @@ export const DUMBBELL: Exercise[] = [
     cues: ['Stand tall, shoulders level', 'Steady breathing', 'Put them down whenever you need'],
     regression: 'Hold lighter weights, or just stand tall holding them.',
     progression: 'Add fifteen seconds to the carry.',
+    space: 'standing',
     effort: 'moderate'
   }
 ];
@@ -755,6 +804,7 @@ export const KETTLEBELL: Exercise[] = [
     cues: ['Hips back, chest proud', 'Push the floor away', 'Lower under control'],
     regression: 'Raise the kettlebell on a box to shorten the range.',
     progression: 'Pause for a second just off the floor.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -771,6 +821,7 @@ export const KETTLEBELL: Exercise[] = [
     cues: ['Elbows inside the knees', 'Heels stay down', 'Chest tall'],
     regression: 'Squat to a chair without the weight.',
     progression: 'Pause for two seconds at the bottom.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -788,6 +839,7 @@ export const KETTLEBELL: Exercise[] = [
     regression: 'Use a lighter weight and a higher support.',
     progression: 'Pause for a second at the top.',
     perSide: true,
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -806,6 +858,7 @@ export const KETTLEBELL: Exercise[] = [
     progression: 'Add a two-second pause overhead.',
     perSide: true,
     contraindicationNotes: 'Skip overhead work on any day it feels uncomfortable.',
+    space: 'standing',
     effort: 'hard'
   },
   {
@@ -823,6 +876,7 @@ export const KETTLEBELL: Exercise[] = [
     regression: 'Stand tall holding the weight instead of walking.',
     progression: 'Add fifteen seconds per side.',
     perSide: true,
+    space: 'standing',
     effort: 'moderate'
   }
 ];
@@ -844,6 +898,7 @@ export const BANDS: Exercise[] = [
     cues: ['Shoulders down and back', 'Squeeze briefly at the end', 'Control the return'],
     regression: 'Step closer to the anchor for less tension.',
     progression: 'Step back, or use a heavier band.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -860,6 +915,8 @@ export const BANDS: Exercise[] = [
     cues: ['Straight arms', 'Lead with the hands', 'Shoulders stay down'],
     regression: 'Widen the grip for less tension.',
     progression: 'Narrow the grip, or use a heavier band.',
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -876,6 +933,7 @@ export const BANDS: Exercise[] = [
     cues: ['Stand tall and braced', 'Press level, not upward', 'Control the return'],
     regression: 'Step towards the anchor to reduce tension.',
     progression: 'Press one arm at a time.',
+    space: 'standing',
     effort: 'moderate'
   },
   {
@@ -892,6 +950,7 @@ export const BANDS: Exercise[] = [
     cues: ['Stay low throughout', 'Small, controlled steps', 'Keep the feet pointing forward'],
     regression: 'Place the band above the knees and take smaller steps.',
     progression: 'Move the band to the ankles.',
+    space: 'standing',
     effort: 'moderate'
   }
 ];
@@ -916,6 +975,8 @@ export const CARDIO: Exercise[] = [
     regression: 'Walk on the spot, or shorten the block.',
     progression: 'Add a gentle arm swing and lengthen the stride.',
     gentle: true,
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -932,6 +993,8 @@ export const CARDIO: Exercise[] = [
     cues: ['Short, quick steps', 'Breathing deeper but controlled', 'Ease off any time'],
     regression: 'Drop back to an easy walk whenever you want.',
     progression: 'Hold the pace for an extra minute.',
+    space: 'standing',
+    discreet: true,
     effort: 'moderate'
   },
   {
@@ -948,6 +1011,8 @@ export const CARDIO: Exercise[] = [
     cues: ['Land softly', 'Keep it conversational', 'Walk whenever you want to'],
     regression: 'Walk briskly instead.',
     progression: 'Extend the block by a minute.',
+    space: 'standing',
+    impact: true,
     effort: 'moderate'
   },
   {
@@ -964,6 +1029,8 @@ export const CARDIO: Exercise[] = [
     cues: ['Controlled, not racing', 'Relaxed hands and jaw', 'Back off if breathing gets ragged'],
     regression: 'Drop to an easy jog or a brisk walk.',
     progression: 'Add a minute to the block.',
+    space: 'standing',
+    impact: true,
     effort: 'hard'
   },
   {
@@ -981,11 +1048,90 @@ export const CARDIO: Exercise[] = [
     regression: 'Stand still and breathe instead.',
     progression: 'Shorten the recovery as fitness builds.',
     gentle: true,
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   }
 ];
 
 // ——— Mobility and stretching ————————————————————————————————————————————
+
+export const TRAVEL: Exercise[] = [
+  {
+    id: 'wall-sit',
+    name: 'Wall sit',
+    category: 'lower',
+    movementPattern: 'squat',
+    difficulty: 2,
+    equipment: [],
+    instructions: 'Back against a wall, slide down until the knees are bent as far as is comfortable. Hold, breathing steadily.',
+    mode: 'time',
+    duration: 40,
+    rest: 40,
+    cues: ['Only as low as is comfortable', 'Weight through the whole foot', 'Keep breathing'],
+    regression: 'Slide down a shorter way, or hold for less time.',
+    progression: 'Sink lower, or add fifteen seconds.',
+    space: 'standing',
+    effort: 'moderate'
+  },
+  {
+    id: 'bag-carry',
+    name: 'Bag carry',
+    category: 'carry',
+    movementPattern: 'carry',
+    difficulty: 1,
+    equipment: [],
+    instructions: 'Hold a bag, case or rucksack at one side and walk tall without leaning. Swap hands halfway.',
+    mode: 'time',
+    duration: 45,
+    rest: 30,
+    cues: ['Stay level through the shoulders', 'Stand tall, do not lean', 'Swap sides halfway'],
+    regression: 'Use a lighter bag, or hold it with both hands in front.',
+    progression: 'Carry for longer, or use the heavier bag.',
+    perSide: true,
+    space: 'standing',
+    discreet: true,
+    effort: 'moderate'
+  },
+  {
+    id: 'seated-march',
+    name: 'Seated march',
+    category: 'cardio',
+    movementPattern: 'gait',
+    difficulty: 1,
+    equipment: [],
+    instructions: 'Sitting tall, lift one knee then the other at a steady rhythm, as though marching in place.',
+    mode: 'time',
+    duration: 45,
+    rest: 20,
+    cues: ['Sit tall, do not slump back', 'Steady, even rhythm', 'Breathe normally'],
+    regression: 'Lift the heels only, keeping the toes down.',
+    progression: 'Lift the knees a little higher, or add a gentle arm swing.',
+    space: 'seated',
+    discreet: true,
+    gentle: true,
+    effort: 'easy'
+  },
+  {
+    id: 'standing-figure-four',
+    name: 'Standing figure four',
+    category: 'stretch',
+    movementPattern: 'mobility',
+    difficulty: 2,
+    equipment: [],
+    instructions: 'Hold a wall, cross one ankle over the opposite knee and sit the hips back a little way. Swap sides halfway.',
+    mode: 'time',
+    duration: 45,
+    rest: 10,
+    cues: ['Hold the wall as much as you like', 'Sit back, do not fold forward', 'A light stretch only'],
+    regression: 'Do it seated instead, which needs no balance.',
+    progression: 'Sit the hips back a little further.',
+    perSide: true,
+    space: 'standing',
+    discreet: true,
+    effort: 'easy'
+  },
+];
 
 export const MOBILITY: Exercise[] = [
   {
@@ -1003,6 +1149,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Do it seated on a chair.',
     progression: 'Slow the movement to match a longer breath.',
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -1020,6 +1167,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Keep the back knee down and skip the rotation.',
     progression: 'Hold the rotation for three slow breaths.',
     perSide: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -1037,6 +1185,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Use your hands to help the knees across.',
     progression: 'Lift the hands off the floor as you switch.',
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -1054,6 +1203,8 @@ export const MOBILITY: Exercise[] = [
     regression: 'Reduce the range and keep the hips facing forward.',
     progression: 'Hold the end position for a full breath.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1072,6 +1223,8 @@ export const MOBILITY: Exercise[] = [
     progression: 'Add a gentle pause at the end of each rock.',
     perSide: true,
     gentle: true,
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1089,6 +1242,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Do it standing, with one foot on a low step behind you.',
     progression: 'Reach the same-side arm overhead.',
     perSide: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -1107,6 +1261,8 @@ export const MOBILITY: Exercise[] = [
     progression: 'Use a higher step.',
     perSide: true,
     gentle: true,
+    space: 'standing',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1124,6 +1280,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Sit on a chair and fold forward over the thighs instead.',
     progression: 'Walk the hands to one side for a gentle side stretch.',
     gentle: true,
+    space: 'floor',
     effort: 'easy'
   },
   {
@@ -1141,6 +1298,8 @@ export const MOBILITY: Exercise[] = [
     regression: 'Make the circles smaller.',
     progression: 'Add a straight-arm reach at the top of each circle.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1159,6 +1318,8 @@ export const MOBILITY: Exercise[] = [
     progression: 'Hold each end position for one slow breath.',
     contraindicationNotes: 'Keep this gentle and stop at the first sign of discomfort.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1177,6 +1338,7 @@ export const MOBILITY: Exercise[] = [
     progression: 'Raise the arm slightly higher on the frame.',
     perSide: true,
     gentle: true,
+    space: 'standing',
     effort: 'easy'
   },
   {
@@ -1195,6 +1357,66 @@ export const MOBILITY: Exercise[] = [
     progression: 'Lean a little further, keeping the spine long.',
     perSide: true,
     gentle: true,
+    space: 'seated',
+    discreet: true,
+    effort: 'easy'
+  },
+  {
+    id: 'standing-side-bend',
+    name: 'Standing side bend',
+    category: 'mobility',
+    movementPattern: 'mobility',
+    difficulty: 1,
+    equipment: [],
+    instructions: 'Stand tall, reach one arm overhead and lean gently to the opposite side. Come back through the middle and swap.',
+    mode: 'time',
+    duration: 40,
+    rest: 10,
+    cues: ['Lengthen up before you lean', 'Stay facing forwards', 'A long stretch, not a deep one'],
+    regression: 'Keep both hands on the hips and lean a short way.',
+    progression: 'Hold each side for a full slow breath.',
+    perSide: true,
+    space: 'standing',
+    discreet: true,
+    gentle: true,
+    effort: 'easy'
+  },
+  {
+    id: 'wrist-and-hand-release',
+    name: 'Wrist and hand release',
+    category: 'mobility',
+    movementPattern: 'mobility',
+    difficulty: 1,
+    equipment: [],
+    instructions: 'Spread the fingers wide, then make a loose fist. Circle the wrists slowly in both directions.',
+    mode: 'time',
+    duration: 40,
+    rest: 0,
+    cues: ['Slow, full circles', 'Spread wide, then soften', 'Let the shoulders stay down'],
+    regression: 'Open and close the hands only.',
+    progression: 'Add a gentle press of the palms together between circles.',
+    space: 'seated',
+    discreet: true,
+    gentle: true,
+    effort: 'easy'
+  },
+  {
+    id: 'ankle-pumps',
+    name: 'Ankle pumps',
+    category: 'mobility',
+    movementPattern: 'mobility',
+    difficulty: 1,
+    equipment: [],
+    instructions: 'Sitting, lift the toes towards you then point them away. Then circle each ankle slowly both ways.',
+    mode: 'time',
+    duration: 45,
+    rest: 0,
+    cues: ['Full range, slow pace', 'Both directions', 'One foot at a time is fine'],
+    regression: 'Move one foot at a time, with the heel resting down.',
+    progression: 'Lift the foot clear of the floor as you circle.',
+    space: 'seated',
+    discreet: true,
+    gentle: true,
     effort: 'easy'
   },
   {
@@ -1212,6 +1434,7 @@ export const MOBILITY: Exercise[] = [
     regression: 'Fold only a short way, hands on the thighs.',
     progression: 'Hold for a few extra breaths.',
     gentle: true,
+    space: 'standing',
     effort: 'easy'
   }
 ];
@@ -1236,6 +1459,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Lie down and let the floor take all your weight.',
     progression: 'Extend to two full minutes.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1253,6 +1478,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Drop the counting and just follow the breath.',
     progression: 'Lengthen the exhale to eight counts.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1270,6 +1497,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Scan only the legs, or only the hands and face.',
     progression: 'Take twice as long over the same journey.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1287,6 +1516,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Soften one area only, such as the shoulders.',
     progression: 'Add a slow scan of the whole body.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1305,6 +1536,8 @@ export const BREATHING: Exercise[] = [
     progression: 'Lengthen each side to five counts.',
     contraindicationNotes: 'Skip the holds if breath-holding makes you lightheaded.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1322,6 +1555,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Keep the breath as it is and simply count it.',
     progression: 'Add a short pause at the end of the exhale.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   },
   {
@@ -1339,6 +1574,8 @@ export const BREATHING: Exercise[] = [
     regression: 'Simply sit for a moment before standing up.',
     progression: 'Add a sentence of your own about the day.',
     gentle: true,
+    space: 'seated',
+    discreet: true,
     effort: 'easy'
   }
 ];
@@ -1348,6 +1585,7 @@ export const BREATHING: Exercise[] = [
 /** Main-block movements, i.e. everything except warm-ups and breathing. */
 export const MAIN_POOL: Exercise[] = [
   ...LOWER,
+  ...TRAVEL,
   ...PUSH,
   ...PULL,
   ...CORE,
@@ -1379,6 +1617,12 @@ export interface PoolFilter {
   equipment: EquipmentId[];
   /** Only movements that can be done seated or lying with no load. */
   gentleOnly?: boolean;
+  /** The most room any movement may need, from the place you are in. */
+  maxSpace?: SpaceNeed;
+  /** Only movements that look unremarkable with other people around. */
+  discreetOnly?: boolean;
+  /** Exclude movements that thud, for shared floors and late evenings. */
+  quietOnly?: boolean;
   categories?: Exercise['category'][];
   patterns?: Exercise['movementPattern'][];
   /** Exclude these ids, used to avoid repeating a movement within a session. */
@@ -1393,6 +1637,9 @@ export function selectPool(pool: Exercise[], filter: PoolFilter): Exercise[] {
     if (exercise.difficulty > maxDifficulty) return false;
     if (!exercise.equipment.every(item => owned.has(item))) return false;
     if (filter.gentleOnly && !exercise.gentle) return false;
+    if (filter.maxSpace && SPACE_ORDER[exercise.space] > SPACE_ORDER[filter.maxSpace]) return false;
+    if (filter.discreetOnly && !exercise.discreet) return false;
+    if (filter.quietOnly && exercise.impact) return false;
     if (filter.categories && !filter.categories.includes(exercise.category)) return false;
     if (filter.patterns && !filter.patterns.includes(exercise.movementPattern)) return false;
     if (filter.exclude?.has(exercise.id)) return false;

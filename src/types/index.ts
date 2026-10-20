@@ -33,10 +33,56 @@ export type EquipmentId =
   | 'full-gym'
   | 'outdoors';
 
+/** Every equipment id, for validating anything that arrives from outside. */
+export const EQUIPMENT_IDS: EquipmentId[] = [
+  'bodyweight',
+  'dumbbells',
+  'kettlebells',
+  'bands',
+  'pullup-bar',
+  'full-gym',
+  'outdoors'
+];
+
 export type TimeBudget = 10 | 20 | 40;
 export type TimePreference = TimeBudget | 'flexible';
 
 export type LocationId = 'home' | 'gym' | 'outside' | 'anywhere';
+
+/** A place you might actually be, with the constraints that come with it. */
+export type PlaceId =
+  | 'home'
+  | 'hotel'
+  | 'office'
+  | 'airport'
+  | 'park'
+  | 'gym'
+  | 'small-space';
+
+/**
+ * What a place allows. Derived from a chosen place, or from a photo of the
+ * space — either way it is only ever a filter on the vetted movement library,
+ * never a source of exercises.
+ */
+/** Every place id, for validating anything that arrives from outside. */
+export const PLACE_IDS: PlaceId[] = [
+  'home',
+  'hotel',
+  'office',
+  'airport',
+  'park',
+  'gym',
+  'small-space'
+];
+
+export interface SpaceConstraints {
+  /** The most room any movement may need. */
+  space: SpaceNeed;
+  /** Keep to movements that do not look odd in public. */
+  discreet: boolean;
+  /** No impact: shared floors, late evenings, thin walls. */
+  quiet: boolean;
+}
 
 export interface Profile {
   goals: Goal[];
@@ -111,6 +157,14 @@ export type Difficulty = 1 | 2 | 3;
 
 export type EffortLabel = 'easy' | 'moderate' | 'hard';
 
+/**
+ * How much room a movement needs. Ordered: a place that allows `floor` allows
+ * everything, a place that only allows `seated` allows the least.
+ */
+export type SpaceNeed = 'seated' | 'standing' | 'floor';
+
+export const SPACE_ORDER: Record<SpaceNeed, number> = {seated: 0, standing: 1, floor: 2};
+
 export interface Exercise {
   id: string;
   name: string;
@@ -136,6 +190,12 @@ export interface Exercise {
   perSide?: boolean;
   /** Suitable while seated or lying; used for recovery and pain-flagged days. */
   gentle?: boolean;
+  /** How much room the movement needs. */
+  space: SpaceNeed;
+  /** Unremarkable to do with other people around — a concourse, an office. */
+  discreet?: boolean;
+  /** Thuds or makes noise: not for a hotel room with someone below. */
+  impact?: boolean;
   /** Relative effort cost, used to keep a session's load sensible. */
   effort: EffortLabel;
 }

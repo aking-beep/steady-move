@@ -2,7 +2,7 @@ import React, {useCallback, useMemo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Animated, {FadeInDown} from 'react-native-reanimated';
-import {ArrowRight, Flame, Footprints, Heart, Timer as TimerIcon, Wind} from 'lucide-react-native';
+import {ArrowRight, Camera, Flame, Footprints, Heart, MapPin, Timer as TimerIcon, Wind} from 'lucide-react-native';
 import {
   Button,
   Card,
@@ -141,8 +141,29 @@ export default function Today() {
         )}
       </Animated.View>
 
-      {/* ——— This week ——— */}
+      {/* ——— Somewhere other than usual ——— */}
       <Animated.View entering={rise(1)}>
+        <Card
+          style={styles.placeCard}
+          onPress={() => router.push('/space')}
+          accessibilityLabel="Choose where you are"
+          accessibilityHint="Builds a session for a hotel room, an airport, a desk or anywhere else"
+        >
+          <View style={styles.placeIcon}>
+            <MapPin size={18} color={colors.primary} strokeWidth={2} />
+          </View>
+          <View style={styles.placeText}>
+            <Text style={styles.placeTitle}>Somewhere different today?</Text>
+            <Text style={styles.placeBody}>
+              A hotel room, a desk, an airport — or photograph the space you are in.
+            </Text>
+          </View>
+          <Camera size={18} color={colors.inkFaint} strokeWidth={2} />
+        </Card>
+      </Animated.View>
+
+      {/* ——— This week ——— */}
+      <Animated.View entering={rise(2)}>
         <SectionHeader title="This week" subtitle={progressMessage(summary, weeklyTarget)} />
         <Card style={styles.week}>
           <View style={styles.weekTop}>
@@ -179,7 +200,7 @@ export default function Today() {
       </Animated.View>
 
       {/* ——— Quick move ——— */}
-      <Animated.View entering={rise(2)}>
+      <Animated.View entering={rise(3)}>
         <SectionHeader
           title="Quick move"
           subtitle="Start something now, without a check-in"
@@ -228,6 +249,25 @@ const styles = StyleSheet.create({
   heroMetaText: {...type.caption, color: colors.sage, letterSpacing: 1},
   dot: {width: 3, height: 3, borderRadius: 2, backgroundColor: colors.sage},
   heroButton: {marginTop: spacing.lg},
+
+  placeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    padding: spacing.lg
+  },
+  placeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  placeText: {flex: 1, gap: 2},
+  placeTitle: {...type.bodyStrong, color: colors.ink},
+  placeBody: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
 
   week: {gap: spacing.lg},
   weekTop: {flexDirection: 'row', alignItems: 'center'},

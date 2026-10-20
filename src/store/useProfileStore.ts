@@ -8,6 +8,7 @@ import {create} from 'zustand';
 import {Profile, Settings, defaultProfile, defaultSettings} from '../types';
 import {KEYS, parseProfile, parseSettings, readKey, removeKey, writeKey} from '../lib/storage';
 import {setHapticsEnabled} from '../lib/haptics';
+import {clearApiKey, isSecureStorageAvailable, readApiKey, writeApiKey} from '../lib/secrets';
 
 export type ProfileDraft = Omit<Profile, 'createdAt'>;
 
@@ -16,6 +17,10 @@ interface ProfileState {
   profile: Profile | null;
   settings: Settings;
   draft: ProfileDraft;
+  /** Optional Claude API key for photo analysis. Empty means the feature is off. */
+  apiKey: string;
+  /** False on web, where there is no platform keystore. */
+  secureStorage: boolean;
 
   hydrate: () => Promise<void>;
   setDraft: (patch: Partial<ProfileDraft>) => void;
@@ -25,6 +30,7 @@ interface ProfileState {
   updateProfile: (patch: Partial<ProfileDraft>) => Promise<void>;
   updateSettings: (patch: Partial<Settings>) => Promise<void>;
   resetOnboarding: () => Promise<void>;
+  setApiKey: (value: string) => Promise<void>;
   reset: () => void;
 }
 
@@ -42,16 +48,22 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   profile: null,
   settings: defaultSettings,
   draft: emptyDraft,
+  apiKey: '',
+  secureStorage: true,
 
   hydrate: async () => {
-    const [profile, settings] = await Promise.all([
+    const [profile, settings, apiKey, secureStorage] = await Promise.all([
       readKey(KEYS.profile, parseProfile, null),
-      readKey(KEYS.settings, parseSettings, defaultSettings)
+      readKey(KEYS.settings, parseSettings, defaultSettings),
+      readApiKey(),
+      isSecureStorageAvailable()
     ]);
     setHapticsEnabled(settings.haptics);
     set({
       profile,
       settings,
+      apiKey,
+      secureStorage,
       hydrated: true,
       draft: profile ? {...profile} : emptyDraft
     });
@@ -103,5 +115,13 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     await removeKey(KEYS.profile);
   },
 
-  reset: () => set({profile: null, settings: defaultSettings, draft: emptyDraft})
+  setApiKey: async value => {
+    set({apiKey: value.trim()});
+    await writeApiKey(value);
+  },
+
+  reset: () => {
+    set({profile: null, settings: defaultSettings, draft: emptyDraft, apiKey: ''});
+    void clearApiKey();
+  }
 }));

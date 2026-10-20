@@ -13,16 +13,19 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "lint": "eslint app src",
     "doctor": "expo-doctor",
-    "pretest": "tsc --pretty false --strict --noUncheckedIndexedAccess false --esModuleInterop --target ES2020 --module commonjs --moduleResolution node --skipLibCheck --rootDir src --outDir .test-build src/types/index.ts src/data/exercises.ts src/data/explore.ts src/engine/duration.ts src/engine/runwalk.ts src/engine/planner.ts src/lib/progress.ts src/lib/date.ts src/lib/demo.ts src/lib/sessions.ts src/lib/storage.ts"
+    "pretest": "tsc --pretty false --strict --noUncheckedIndexedAccess false --esModuleInterop --target ES2020 --module commonjs --moduleResolution node --skipLibCheck --rootDir src --outDir .test-build src/types/index.ts src/data/exercises.ts src/data/explore.ts src/data/places.ts src/engine/duration.ts src/engine/runwalk.ts src/engine/planner.ts src/lib/progress.ts src/lib/date.ts src/lib/demo.ts src/lib/sessions.ts src/lib/places.ts src/lib/storage.ts src/lib/vision.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.30",
     "expo-constants": "~57.0.22",
     "expo-haptics": "~57.0.3",
+    "expo-image-picker": "~57.0.20",
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.13",
     "expo-router": "~57.0.28",
+    "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.59.0",

@@ -26,6 +26,7 @@ import {
   Session,
   SessionBlock,
   SessionType,
+  SpaceConstraints,
   WorkoutLog
 } from '../types';
 import {
@@ -60,6 +61,14 @@ export interface PlanInput {
   patterns?: MovementPattern[];
   /** Replaces the generated title, for named Explore sessions. */
   titleOverride?: string;
+  /**
+   * What the place you are in allows — floor space, whether people are around,
+   * whether the floor below matters. These only ever filter the vetted
+   * library; they never add a movement to it.
+   */
+  constraints?: SpaceConstraints;
+  /** A line about the place, folded into the session's explanation. */
+  placeNote?: string;
 }
 
 export const SESSION_TITLES: Record<SessionType, string> = {
@@ -450,10 +459,14 @@ export function generateSession(input: PlanInput): Session {
 
   const intensity = chooseIntensity(checkIn, profile, needsRecovery);
 
+  const constraints = input.constraints;
   const filter = {
     level: profile.level,
     equipment: checkIn.equipment,
-    gentleOnly: needsRecovery
+    gentleOnly: needsRecovery,
+    maxSpace: constraints?.space,
+    discreetOnly: constraints?.discreet,
+    quietOnly: constraints?.quiet
   };
 
   // ARRIVE — always breathing, always the same shape, so starting is easy.
@@ -495,7 +508,9 @@ export function generateSession(input: PlanInput): Session {
   } else if (type === 'runwalk') {
     move = buildRunWalkBlocks({
       level: profile.level,
-      gentle: intensity === 'easy' || intensity === 'gentle',
+      // Jogging through a concourse is not a thing: anywhere that calls for
+      // discretion gets walking intervals only.
+      gentle: intensity === 'easy' || intensity === 'gentle' || Boolean(constraints?.discreet),
       totalSeconds: budgets.move,
       variant,
       idPrefix: 'move'
@@ -542,11 +557,20 @@ export function generateSession(input: PlanInput): Session {
   const resetAll = selectPool(MOBILITY, {
     level: profile.level,
     equipment: checkIn.equipment,
-    gentleOnly: painFlagged
+    gentleOnly: painFlagged,
+    maxSpace: constraints?.space,
+    discreetOnly: constraints?.discreet,
+    quietOnly: constraints?.quiet
   });
   // Closing down with the same stretch the session just held reads as a bug.
+  // In a constrained place the pool can be too small to avoid it entirely, so
+  // fall back to ordering by what the main block used least rather than
+  // abandoning the preference altogether.
   const unused = resetAll.filter(exercise => !usedInMove.has(exercise.id));
-  const resetPool = unused.length >= 2 ? unused : resetAll;
+  const resetPool =
+    unused.length >= 2
+      ? unused
+      : [...unused, ...resetAll.filter(exercise => usedInMove.has(exercise.id))];
   const resetCount = budgets.reset >= 240 ? 3 : budgets.reset >= 140 ? 2 : 1;
   const resetPicks = cycle(resetPool.length ? resetPool : MOBILITY.filter(e => e.gentle), resetCount, variant + 2);
   const resetSeconds = allocate(budgets.reset, resetPicks.map(() => 1), 5, 30);
@@ -575,7 +599,9 @@ export function generateSession(input: PlanInput): Session {
     type,
     title: painFlagged ? 'Gentle Reset' : (input.titleOverride ?? SESSION_TITLES[type]),
     focus: painFlagged ? 'Breathing and body awareness only' : SESSION_FOCUS[type],
-    rationale: buildRationale(checkIn, intensity, type),
+    rationale: [buildRationale(checkIn, intensity, type), input.placeNote]
+      .filter(Boolean)
+      .join(' '),
     intensity,
     minutes: checkIn.minutes,
     totalSeconds,
