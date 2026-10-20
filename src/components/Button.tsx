@@ -1,11 +1,11 @@
 import React, {useCallback} from 'react';
 import {ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
-import {MIN_TAP, colors, motion, radius, spacing, type} from '../theme';
+import {HAIRLINE, MIN_TAP, Scheme, light, motion, radius, spacing, type} from '../theme';
 import {useReducedMotion} from '../hooks/useMotion';
 import {tapSelection} from '../lib/haptics';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'onDark';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'large' | 'medium' | 'small';
 
 interface Props {
@@ -15,22 +15,23 @@ interface Props {
   size?: ButtonSize;
   disabled?: boolean;
   loading?: boolean;
-  /** Leading icon element, usually a lucide icon. */
   icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** Overrides the spoken label when the visible text is not descriptive. */
   accessibilityLabel?: string;
   accessibilityHint?: string;
-  /** Suppresses the selection tick, e.g. where the action has its own haptic. */
+  /** Suppresses the selection tick where the action has its own haptic. */
   silent?: boolean;
   fullWidth?: boolean;
+  /** The surface this button sits on. Pass `dark` inside the player. */
+  scheme?: Scheme;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
- * The app's one button. Press feedback is a subtle scale that collapses to a
- * plain opacity change when reduced motion is on.
+ * One button, three weights. The label is set in the UI face at a semibold
+ * weight with slight negative tracking — the same treatment as a heading, so
+ * a row of controls reads as part of the page rather than bolted onto it.
  */
 export function Button({
   label,
@@ -44,14 +45,15 @@ export function Button({
   accessibilityLabel,
   accessibilityHint,
   silent = false,
-  fullWidth = true
+  fullWidth = true,
+  scheme = light
 }: Props) {
   const reduced = useReducedMotion();
   const pressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: reduced ? 1 : 1 - pressed.value * (1 - motion.pressScale)}],
-    opacity: 1 - pressed.value * 0.12
+    opacity: 1 - pressed.value * 0.1
   }));
 
   const handlePress = useCallback(() => {
@@ -61,6 +63,7 @@ export function Button({
   }, [disabled, loading, onPress, silent]);
 
   const isDisabled = disabled || loading;
+  const tone = toneFor(variant, scheme);
 
   return (
     <AnimatedPressable
@@ -79,7 +82,7 @@ export function Button({
       style={[
         styles.base,
         sizes[size],
-        variants[variant].container,
+        {backgroundColor: tone.bg, borderColor: tone.border, borderWidth: tone.border ? HAIRLINE * 2 : 0},
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         animatedStyle,
@@ -88,11 +91,11 @@ export function Button({
     >
       <View style={styles.inner}>
         {loading ? (
-          <ActivityIndicator size="small" color={variants[variant].spinner} />
+          <ActivityIndicator size="small" color={tone.ink} />
         ) : (
           <>
             {icon ? <View style={styles.icon}>{icon}</View> : null}
-            <Text style={[styles.label, labelSizes[size], variants[variant].label]} numberOfLines={2}>
+            <Text style={[labelSizes[size], {color: tone.ink}]} numberOfLines={2}>
               {label}
             </Text>
           </>
@@ -102,53 +105,41 @@ export function Button({
   );
 }
 
+function toneFor(variant: ButtonVariant, scheme: Scheme): {bg: string; ink: string; border?: string} {
+  switch (variant) {
+    case 'primary':
+      return {bg: scheme.accent, ink: scheme.accentInk};
+    case 'secondary':
+      return {bg: 'transparent', ink: scheme.ink, border: scheme.lineStrong};
+    case 'ghost':
+    default:
+      return {bg: 'transparent', ink: scheme.inkMuted};
+  }
+}
+
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: MIN_TAP
+    minHeight: MIN_TAP + 8
   },
   fullWidth: {alignSelf: 'stretch'},
   inner: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm},
-  icon: {marginRight: 2},
-  label: {textAlign: 'center'},
-  disabled: {opacity: 0.4}
+  icon: {marginRight: 1},
+  disabled: {opacity: 0.35}
 });
 
 const sizes = StyleSheet.create({
-  large: {paddingVertical: spacing.lg, paddingHorizontal: spacing.xxl},
-  medium: {paddingVertical: spacing.md, paddingHorizontal: spacing.xl},
+  large: {paddingVertical: spacing.lg + 2, paddingHorizontal: spacing.xxl},
+  medium: {paddingVertical: spacing.md, paddingHorizontal: spacing.xl, minHeight: MIN_TAP + 2},
   small: {paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, minHeight: MIN_TAP}
 });
 
 const labelSizes = StyleSheet.create({
-  large: {...type.bodyStrong},
-  medium: {...type.bodyStrong, fontSize: 15},
-  small: {...type.caption, fontWeight: '700'}
+  large: {...type.bodyStrong, letterSpacing: -0.1},
+  medium: {...type.smallStrong},
+  small: {...type.caption, fontFamily: type.bodyStrong.fontFamily}
 });
-
-const variants: Record<ButtonVariant, {container: ViewStyle; label: {color: string}; spinner: string}> = {
-  primary: {
-    container: {backgroundColor: colors.primary},
-    label: {color: colors.onPrimary},
-    spinner: colors.onPrimary
-  },
-  secondary: {
-    container: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong},
-    label: {color: colors.ink},
-    spinner: colors.ink
-  },
-  ghost: {
-    container: {backgroundColor: 'transparent'},
-    label: {color: colors.inkSoft},
-    spinner: colors.inkSoft
-  },
-  onDark: {
-    container: {backgroundColor: colors.onPrimary},
-    label: {color: colors.primary},
-    spinner: colors.primary
-  }
-};
 
 export default Button;

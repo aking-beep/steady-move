@@ -79,7 +79,7 @@ export default function SpacePicker() {
 
       {/* ——— Photo route ——— */}
       <Card
-        tone="primary"
+        tone="accent"
         style={styles.scanCard}
         onPress={() => {
           tapSelection();
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   scanText: {flex: 1, gap: 2},
   scanTitle: {...type.subheading, color: colors.onPrimary},
-  scanBody: {...type.caption, color: colors.primarySoft, fontWeight: '400'},
+  scanBody: {...type.caption, color: colors.primarySoft},
 
   intents: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm},
   intent: {
@@ -190,14 +190,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   intentSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 2},
-  intentLabel: {...type.caption, color: colors.ink, fontWeight: '600'},
+  intentLabel: {...type.caption, color: colors.ink},
   intentLabelSelected: {color: colors.primary},
 
   list: {gap: spacing.md},
   row: {flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, minHeight: 72},
   rowText: {flex: 1, gap: 2},
   rowTitle: {...type.bodyStrong, color: colors.ink},
-  rowBody: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
+  rowBody: {...type.caption, color: colors.inkSoft},
 
   footnote: {
     ...type.caption,

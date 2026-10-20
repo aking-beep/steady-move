@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import {ChevronRight} from 'lucide-react-native';
 import {Button, Card, ScreenContainer, SectionHeader, SegmentedChoice} from '../../src/components';
 import {maskKey} from '../../src/lib/secrets';
-import {TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
+import {HAIRLINE, TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
 import {Activity, EquipmentId, Goal, Level, TimePreference} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -430,12 +430,12 @@ const styles = StyleSheet.create({
 
   block: {gap: spacing.md, marginBottom: spacing.md},
   label: {...type.subheading, color: colors.ink},
-  help: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
+  help: {...type.caption, color: colors.inkSoft},
 
   linkRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md, minHeight: 68},
   linkText: {flex: 1, gap: 2},
   linkLabel: {...type.bodyStrong, color: colors.ink},
-  linkValue: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
+  linkValue: {...type.caption, color: colors.inkSoft},
 
   toggleCard: {gap: spacing.lg},
   toggleRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.lg, minHeight: MIN_TAP},
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     ...type.body,
     color: colors.ink,
     backgroundColor: colors.canvas,
-    borderWidth: 1,
+    borderWidth: HAIRLINE,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
@@ -471,5 +471,5 @@ const styles = StyleSheet.create({
   },
   aboutLabel: {...type.body, color: colors.ink},
   aboutValue: {...type.body, color: colors.inkFaint},
-  disclaimer: {...type.caption, color: colors.inkSoft, fontWeight: '400'}
+  disclaimer: {...type.caption, color: colors.inkSoft}
 });

@@ -1,130 +1,346 @@
-// The Steady Move design system: one restrained, natural palette plus a single
-// spacing, radius and type scale. Screens compose these tokens and never
-// hard-code a colour or a magic number.
+// The Steady Move design system.
+//
+// Two surfaces, one brand:
+//   • Daylight — warm paper, forest ink. For browsing, planning, reflecting.
+//   • Nightfall — warm near-black. For doing: the session player and the
+//     breathing screen, where a bright screen in a dim room is the wrong
+//     answer and a cinematic one is the right one.
+//
+// Craft rules this system encodes, rather than leaving to each screen:
+//   • Separation comes from tone and hairlines, not drop shadows.
+//   • Display type is set tight (negative tracking); all-caps labels are set
+//     loose (positive tracking). Both are deliberate, and opposite.
+//   • Numbers that matter are large, and set with tabular figures so they do
+//     not jitter as they count down.
+//   • One accent, used sparingly, reserved for action and progress.
 
-export const colors = {
-  /** Warm off-white page background. */
-  canvas: '#F5F2EB',
-  /** Slightly warmer surface for stacked sections. */
-  canvasAlt: '#EFEBE1',
-  /** Card and sheet surfaces. */
-  surface: '#FFFFFF',
-  /** Quiet filled surface (chips at rest, inactive tracks). */
-  surfaceMuted: '#E9E5DA',
+import {Platform} from 'react-native';
 
-  /** Charcoal body and heading type. */
-  ink: '#22251F',
-  /** Secondary type. */
-  inkSoft: '#5C6157',
-  /** Tertiary type, captions, metadata. */
-  inkFaint: '#8A8F82',
+// ——— Palette ————————————————————————————————————————————————————————————
+//
+// Near-black rather than pure black, and warm rather than blue: the dark
+// surface should feel like the light one with the lamp off, not like a
+// different product.
 
-  /** Deep forest green: primary actions and emphasis. */
-  primary: '#1F3D30',
-  primaryPressed: '#172E25',
-  /** Type and icons placed on the primary colour. */
-  onPrimary: '#F5F2EB',
-  /** Light green wash behind primary content. */
-  primarySoft: '#DDE7DF',
+export const palette = {
+  paper: '#F7F5F0',
+  paperSunken: '#EFEBE2',
+  paperRaised: '#FFFFFF',
 
-  /** Sage: secondary accents, selected states, progress fills. */
-  sage: '#8AA888',
-  sageSoft: '#E4EBE0',
+  night: '#111310',
+  nightSunken: '#0A0B09',
+  nightRaised: '#1B1E1A',
 
-  /** Clay: warm accent for streaks and highlights. Used sparingly. */
-  clay: '#B06B45',
-  claySoft: '#F2E3D8',
+  forest: '#1E3B2F',
+  forestDeep: '#162C23',
+  forestSoft: '#DDE6DD',
 
-  /** Hairlines and dividers. */
-  border: '#DFDACE',
-  borderStrong: '#C9C3B4',
+  sage: '#8CA98A',
+  sageBright: '#A9CBA4',
+  sageSoft: '#E6ECE2',
 
-  /** Safety / caution messaging. Never alarming red. */
-  caution: '#8A5A2B',
-  cautionSoft: '#F6EADC',
+  clay: '#B4603A',
+  claySoft: '#F3E2D7',
+  clayBright: '#D98A5F',
 
-  /** Scrims for modal and overlay states. */
-  scrim: 'rgba(34, 37, 31, 0.45)'
+  ink: '#191C17',
+  inkMuted: '#595F54',
+  inkFaint: '#8B9085',
+
+  cream: '#F2EFE7',
+  creamMuted: '#A9AEA3',
+  creamFaint: '#6E7369',
+
+  lineLight: '#E2DDD1',
+  lineLightStrong: '#CDC7B8',
+  lineDark: '#282C26',
+  lineDarkStrong: '#3A3F37',
+
+  caution: '#8A5323',
+  cautionSoft: '#F6E9DB',
+  cautionDark: '#E0A977'
 } as const;
 
-/** 4pt base spacing scale. */
+export interface Scheme {
+  name: 'light' | 'dark';
+  /** Page background. */
+  bg: string;
+  /** Recessed areas — track fills, inset wells. */
+  bgSunken: string;
+  /** Cards and sheets. */
+  surface: string;
+  /** A second surface step, for a card on a card. */
+  surfaceAlt: string;
+
+  ink: string;
+  inkMuted: string;
+  inkFaint: string;
+
+  /** Hairlines. */
+  line: string;
+  lineStrong: string;
+
+  /** Primary action fill, and the ink that sits on it. */
+  accent: string;
+  accentInk: string;
+  accentPressed: string;
+  /** A quiet wash of the accent, for selected states. */
+  accentSoft: string;
+
+  /** Progress, streaks, the one warm note. */
+  highlight: string;
+  highlightSoft: string;
+
+  /** Caution copy. Never alarming. */
+  caution: string;
+  cautionSoft: string;
+
+  scrim: string;
+}
+
+export const light: Scheme = {
+  name: 'light',
+  bg: palette.paper,
+  bgSunken: palette.paperSunken,
+  surface: palette.paperRaised,
+  surfaceAlt: palette.paperSunken,
+
+  ink: palette.ink,
+  inkMuted: palette.inkMuted,
+  inkFaint: palette.inkFaint,
+
+  line: palette.lineLight,
+  lineStrong: palette.lineLightStrong,
+
+  accent: palette.forest,
+  accentInk: palette.paper,
+  accentPressed: palette.forestDeep,
+  accentSoft: palette.forestSoft,
+
+  highlight: palette.clay,
+  highlightSoft: palette.claySoft,
+
+  caution: palette.caution,
+  cautionSoft: palette.cautionSoft,
+
+  scrim: 'rgba(25, 28, 23, 0.45)'
+};
+
+/**
+ * On a near-black surface a deep forest button disappears, so the primary
+ * action inverts to cream — the same move a black-and-white brand makes.
+ * The green stays as the colour of progress.
+ */
+export const dark: Scheme = {
+  name: 'dark',
+  bg: palette.night,
+  bgSunken: palette.nightSunken,
+  surface: palette.nightRaised,
+  surfaceAlt: '#232722',
+
+  ink: palette.cream,
+  inkMuted: palette.creamMuted,
+  inkFaint: palette.creamFaint,
+
+  line: palette.lineDark,
+  lineStrong: palette.lineDarkStrong,
+
+  accent: palette.cream,
+  accentInk: palette.night,
+  accentPressed: '#DAD6CC',
+  accentSoft: 'rgba(242, 239, 231, 0.10)',
+
+  highlight: palette.clayBright,
+  highlightSoft: 'rgba(217, 138, 95, 0.16)',
+
+  caution: palette.cautionDark,
+  cautionSoft: 'rgba(224, 169, 119, 0.14)',
+
+  scrim: 'rgba(0, 0, 0, 0.6)'
+};
+
+/** The colour of progress, on either surface. */
+export function progressColor(scheme: Scheme): string {
+  return scheme.name === 'dark' ? palette.sageBright : palette.forest;
+}
+
+// ——— Spacing ————————————————————————————————————————————————————————————
+// A 4pt base. Screens use `gutter` for their side margins and nothing else.
+
 export const spacing = {
   xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 44
+  xxl: 28,
+  xxxl: 40,
+  huge: 56,
+  gutter: 22
 } as const;
 
 export const radius = {
-  sm: 10,
+  xs: 8,
+  sm: 12,
   md: 16,
-  lg: 22,
+  lg: 20,
   xl: 28,
+  sheet: 32,
   pill: 999
 } as const;
 
-/**
- * Type scale. `lineHeight` is always set so that OS font scaling grows text
- * without collapsing line spacing.
- */
-export const type = {
-  display: {fontSize: 40, lineHeight: 44, fontWeight: '700' as const, letterSpacing: -1},
-  title: {fontSize: 28, lineHeight: 34, fontWeight: '700' as const, letterSpacing: -0.6},
-  heading: {fontSize: 22, lineHeight: 28, fontWeight: '700' as const, letterSpacing: -0.3},
-  subheading: {fontSize: 17, lineHeight: 24, fontWeight: '600' as const},
-  body: {fontSize: 16, lineHeight: 24, fontWeight: '400' as const},
-  bodyStrong: {fontSize: 16, lineHeight: 24, fontWeight: '600' as const},
-  small: {fontSize: 14, lineHeight: 20, fontWeight: '400' as const},
-  caption: {fontSize: 13, lineHeight: 18, fontWeight: '500' as const},
-  /** All-caps section eyebrow. */
-  eyebrow: {fontSize: 12, lineHeight: 16, fontWeight: '700' as const, letterSpacing: 1.4},
-  /** Tabular-feeling numerals for timers. */
-  timer: {fontSize: 64, lineHeight: 70, fontWeight: '300' as const, letterSpacing: -2}
+// ——— Type ———————————————————————————————————————————————————————————————
+//
+// Fraunces, an editorial serif, for the few places a screen speaks. Inter
+// Tight for everything that works: labels, numbers, controls.
+
+export const fonts = {
+  displaySemi: 'Fraunces_600SemiBold',
+  displayBold: 'Fraunces_700Bold',
+  sans: 'InterTight_400Regular',
+  sansMedium: 'InterTight_500Medium',
+  sansSemi: 'InterTight_600SemiBold',
+  sansBold: 'InterTight_700Bold'
 } as const;
 
-/** Soft, low-contrast elevation. Android uses `elevation`, iOS the shadow set. */
-export const elevation = {
-  card: {
-    shadowColor: '#22251F',
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    shadowOffset: {width: 0, height: 6},
-    elevation: 2
+type TextStyle = {
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  letterSpacing?: number;
+  textTransform?: 'uppercase';
+};
+
+/**
+ * Display sizes carry negative tracking because default spacing looks gappy
+ * once type is large; the all-caps label carries positive tracking for the
+ * opposite reason. Line heights are explicit so OS font scaling grows the text
+ * without collapsing the leading.
+ */
+export const type = {
+  /** The one big statement on a screen. */
+  display: {fontFamily: fonts.displaySemi, fontSize: 40, lineHeight: 44, letterSpacing: -1},
+  /** Screen titles. */
+  title: {fontFamily: fonts.displaySemi, fontSize: 29, lineHeight: 34, letterSpacing: -0.6},
+  /** Editorial subheads, set in the serif at a readable weight. */
+  serifBody: {fontFamily: fonts.displaySemi, fontSize: 19, lineHeight: 27, letterSpacing: -0.2},
+
+  heading: {fontFamily: fonts.sansBold, fontSize: 21, lineHeight: 27, letterSpacing: -0.4},
+  subheading: {fontFamily: fonts.sansSemi, fontSize: 16, lineHeight: 23, letterSpacing: -0.1},
+
+  body: {fontFamily: fonts.sans, fontSize: 15.5, lineHeight: 23},
+  bodyStrong: {fontFamily: fonts.sansSemi, fontSize: 15.5, lineHeight: 23},
+  small: {fontFamily: fonts.sans, fontSize: 14, lineHeight: 21},
+  smallStrong: {fontFamily: fonts.sansSemi, fontSize: 14, lineHeight: 21},
+  caption: {fontFamily: fonts.sansMedium, fontSize: 12.5, lineHeight: 18},
+
+  /** The all-caps eyebrow. Loose, small, and used as a rule-mate. */
+  label: {
+    fontFamily: fonts.sansBold,
+    fontSize: 10.5,
+    lineHeight: 14,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase'
   },
+
+  /** Oversized statistics — the number is the thing. */
+  stat: {fontFamily: fonts.sansSemi, fontSize: 36, lineHeight: 40, letterSpacing: -1.4},
+  statLarge: {fontFamily: fonts.sansSemi, fontSize: 52, lineHeight: 54, letterSpacing: -2},
+  /** The session clock. */
+  timer: {fontFamily: fonts.sansMedium, fontSize: 74, lineHeight: 78, letterSpacing: -3},
+
+  /** Former name for `label`, kept so screens can migrate one at a time. */
+  eyebrow: {
+    fontFamily: fonts.sansBold,
+    fontSize: 10.5,
+    lineHeight: 14,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase'
+  }
+} as const satisfies Record<string, TextStyle>;
+
+/**
+ * Tabular figures, so a counting clock does not shuffle its own digits.
+ * Applied to every number that changes in place.
+ */
+export const tabular = Platform.select({
+  ios: {fontVariant: ['tabular-nums' as const]},
+  default: {fontVariant: ['tabular-nums' as const]}
+});
+
+// ——— Depth ———————————————————————————————————————————————————————————————
+// Premium interfaces separate with tone and hairlines. Shadow is reserved for
+// things that genuinely float above the page.
+
+export const elevation = {
+  none: {},
+  /** Former names: cards now separate with tone and a hairline, not shadow. */
+  card: {},
   raised: {
-    shadowColor: '#22251F',
-    shadowOpacity: 0.1,
-    shadowRadius: 22,
+    shadowColor: '#000000',
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
     shadowOffset: {width: 0, height: 10},
     elevation: 6
+  },
+  floating: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    shadowOffset: {width: 0, height: 12},
+    elevation: 8
   }
 } as const;
 
-/** Animation timings. Every consumer must also respect the reduce-motion setting. */
 export const motion = {
   fast: 140,
   base: 240,
   slow: 420,
-  /** Press feedback scale for tappable surfaces. */
-  pressScale: 0.97
+  pressScale: 0.975
 } as const;
 
-/** Minimum tappable edge, per platform accessibility guidance. */
+/** Minimum tappable edge. */
 export const MIN_TAP = 44;
 
-/**
- * Bottom padding tab screens add so their last card clears the tab bar.
- *
- * The bar itself is sized by React Navigation, which also adds the device's
- * safe-area inset — pinning its height clipped the labels. This is therefore a
- * deliberate over-estimate of the bar's content height: a little extra space
- * after the final card costs nothing, whereas too little hides it.
- */
+/** Bottom padding tab screens add so the last card clears the tab bar. */
 export const TAB_BAR_INSET = 88;
 
-export const theme = {colors, spacing, radius, type, elevation, motion, MIN_TAP};
+/** Hairline that stays a hairline on every density. */
+export const HAIRLINE = Platform.select({android: 0.8, default: 0.5}) as number;
+
+// ——— Compatibility ——————————————————————————————————————————————————————
+// The Daylight scheme under the names the screens already use, so the system
+// can be adopted screen by screen rather than in one unreviewable sweep.
+
+export const colors = {
+  canvas: light.bg,
+  canvasAlt: light.bgSunken,
+  surface: light.surface,
+  surfaceMuted: light.bgSunken,
+
+  ink: light.ink,
+  inkSoft: light.inkMuted,
+  inkFaint: light.inkFaint,
+
+  primary: light.accent,
+  primaryPressed: light.accentPressed,
+  onPrimary: light.accentInk,
+  primarySoft: light.accentSoft,
+
+  sage: palette.sage,
+  sageSoft: palette.sageSoft,
+
+  clay: light.highlight,
+  claySoft: light.highlightSoft,
+
+  border: light.line,
+  borderStrong: light.lineStrong,
+
+  caution: light.caution,
+  cautionSoft: light.cautionSoft,
+
+  scrim: light.scrim
+} as const;
+
+export const theme = {colors, light, dark, spacing, radius, type, elevation, motion, MIN_TAP};
 export default theme;

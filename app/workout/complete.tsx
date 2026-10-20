@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import Animated, {FadeIn, FadeInDown} from 'react-native-reanimated';
 import {Check} from 'lucide-react-native';
 import {Button, Card, ScreenContainer, SegmentedChoice} from '../../src/components';
-import {colors, radius, spacing, type} from '../../src/theme';
+import {HAIRLINE, colors, radius, spacing, type} from '../../src/theme';
 import {EffortRating, Feel} from '../../src/types';
 import {useSessionStore} from '../../src/store/useSessionStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   stat: {flex: 1, alignItems: 'center', gap: 2},
   statDivider: {width: StyleSheet.hairlineWidth, height: 34, backgroundColor: colors.border},
   statValue: {...type.subheading, color: colors.ink},
-  statLabel: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
+  statLabel: {...type.caption, color: colors.inkFaint},
 
   section: {marginTop: spacing.xxl, gap: spacing.md},
   question: {...type.subheading, color: colors.ink},
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     ...type.body,
     color: colors.ink,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: HAIRLINE,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.lg,
@@ -195,5 +195,5 @@ const styles = StyleSheet.create({
   },
 
   actions: {marginTop: spacing.xxxl, gap: spacing.md},
-  note: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center'}
+  note: {...type.caption, color: colors.inkFaint, textAlign: 'center'}
 });

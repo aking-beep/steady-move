@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import Animated, {FadeIn, FadeInUp} from 'react-native-reanimated';
 import {Check, Pause, Play, Plus, SkipForward, X} from 'lucide-react-native';
 import {Button, ProgressBar, ScreenContainer, Timer} from '../../src/components';
-import {MIN_TAP, colors, spacing, type} from '../../src/theme';
+import {HAIRLINE, MIN_TAP, dark, progressColor, radius, spacing, tabular, type} from '../../src/theme';
 import {
   currentBlock,
   sessionProgress,
@@ -112,8 +112,8 @@ export default function SessionPlayer() {
   return (
     <ScreenContainer
       scroll={false}
-      background={isRest ? colors.primary : colors.canvas}
-      darkStatusBar={isRest}
+      background={dark.bg}
+      darkStatusBar
       contentStyle={styles.content}
     >
       {/* ——— Header: where we are in the whole session ——— */}
@@ -125,16 +125,12 @@ export default function SessionPlayer() {
           hitSlop={12}
           style={styles.headerButton}
         >
-          <X size={22} color={isRest ? colors.onPrimary : colors.ink} strokeWidth={2} />
+          <X size={22} color={dark.inkMuted} strokeWidth={1.8} />
         </Pressable>
 
         <View style={styles.headerCenter}>
-          <Text style={[styles.phase, isRest && styles.onDarkFaint]}>
-            {isRest ? 'REST' : PHASE_LABEL[block.phase].toUpperCase()}
-          </Text>
-          <Text style={[styles.headerTime, isRest && styles.onDark]}>
-            {formatSeconds(leftInSession)} left
-          </Text>
+          <Text style={styles.phase}>{isRest ? 'Rest' : PHASE_LABEL[block.phase]}</Text>
+          <Text style={styles.headerTime}>{formatSeconds(leftInSession)} left</Text>
         </View>
 
         <View style={styles.headerButton} />
@@ -142,8 +138,9 @@ export default function SessionPlayer() {
 
       <ProgressBar
         progress={progress}
-        color={isRest ? colors.sage : colors.primary}
-        trackColor={isRest ? colors.primaryPressed : colors.surfaceMuted}
+        color={isRest ? dark.inkFaint : progressColor(dark)}
+        trackColor={dark.line}
+        height={3}
         accessibilityLabel={`Session ${Math.round(progress * 100)} percent complete`}
       />
 
@@ -153,31 +150,26 @@ export default function SessionPlayer() {
         entering={reduced ? undefined : FadeIn.duration(260)}
         style={styles.main}
       >
-        <Text
-          style={[styles.name, isRest && styles.onDark]}
-          numberOfLines={3}
-          accessibilityRole="header"
-        >
+        <Text style={styles.name} numberOfLines={3} accessibilityRole="header">
           {block.name}
         </Text>
 
-        {block.round ? (
-          <Text style={[styles.round, isRest && styles.onDarkFaint]}>{`Round ${block.round}`}</Text>
-        ) : null}
+        {block.round ? <Text style={styles.round}>{`Round ${block.round}`}</Text> : null}
 
         <Timer
           remaining={remaining}
           total={block.seconds}
-          size={236}
-          color={isRest ? colors.sage : colors.primary}
-          trackColor={isRest ? colors.primaryPressed : colors.surfaceMuted}
+          size={252}
+          color={isRest ? dark.inkFaint : progressColor(dark)}
+          trackColor={dark.line}
           caption={block.mode === 'reps' && block.reps ? block.reps : undefined}
           paused={!running}
+          scheme={dark}
         />
 
         {isRest ? (
           <View style={styles.nextWrap}>
-            <Text style={styles.nextLabel}>NEXT</Text>
+            <Text style={styles.nextLabel}>Next up</Text>
             <Text style={styles.nextName} numberOfLines={2}>
               {block.nextName ?? 'Finish'}
             </Text>
@@ -223,35 +215,38 @@ export default function SessionPlayer() {
           <View style={styles.restControls}>
             <Button
               label="+15 sec"
-              variant="onDark"
+              variant="secondary"
+              scheme={dark}
               size="medium"
               fullWidth={false}
               style={styles.restButton}
               onPress={() => useSessionStore.getState().addSeconds(15)}
-              icon={<Plus size={16} color={colors.primary} strokeWidth={2.5} />}
+              icon={<Plus size={16} color={dark.ink} strokeWidth={2} />}
             />
             <Button
               label="Skip rest"
-              variant="onDark"
+              scheme={dark}
               size="medium"
               fullWidth={false}
               style={styles.restButton}
               onPress={onComplete}
-              icon={<SkipForward size={16} color={colors.primary} strokeWidth={2.5} />}
+              icon={<SkipForward size={16} color={dark.accentInk} strokeWidth={2} />}
             />
           </View>
         ) : (
           <>
             <Button
               label="Complete"
+              scheme={dark}
               onPress={onComplete}
               silent
-              icon={<Check size={18} color={colors.onPrimary} strokeWidth={2.5} />}
+              icon={<Check size={18} color={dark.accentInk} strokeWidth={2.2} />}
             />
             <View style={styles.secondaryRow}>
               <Button
                 label={running ? 'Pause' : 'Resume'}
                 variant="secondary"
+                scheme={dark}
                 size="medium"
                 style={styles.secondaryButton}
                 fullWidth={false}
@@ -260,27 +255,28 @@ export default function SessionPlayer() {
                 }
                 icon={
                   running ? (
-                    <Pause size={16} color={colors.ink} strokeWidth={2} />
+                    <Pause size={16} color={dark.ink} strokeWidth={2} />
                   ) : (
-                    <Play size={16} color={colors.ink} strokeWidth={2} />
+                    <Play size={16} color={dark.ink} strokeWidth={2} />
                   )
                 }
               />
               <Button
                 label="Skip"
                 variant="secondary"
+                scheme={dark}
                 size="medium"
                 style={styles.secondaryButton}
                 fullWidth={false}
                 onPress={onSkip}
                 accessibilityHint="Moves on without counting this movement"
-                icon={<SkipForward size={16} color={colors.ink} strokeWidth={2} />}
+                icon={<SkipForward size={16} color={dark.ink} strokeWidth={2} />}
               />
             </View>
           </>
         )}
 
-        <Text style={[styles.counter, isRest && styles.onDarkFaint]}>
+        <Text style={styles.counter}>
           {`${doneCount} of ${exerciseBlocks.length} exercises done`}
         </Text>
       </View>
@@ -291,7 +287,7 @@ export default function SessionPlayer() {
 const styles = StyleSheet.create({
   content: {paddingBottom: spacing.xl},
   centered: {flex: 1, justifyContent: 'center', gap: spacing.lg},
-  emptyTitle: {...type.heading, color: colors.ink, textAlign: 'center'},
+  emptyTitle: {...type.heading, color: dark.ink, textAlign: 'center'},
 
   header: {
     flexDirection: 'row',
@@ -302,36 +298,44 @@ const styles = StyleSheet.create({
     minHeight: MIN_TAP
   },
   headerButton: {width: MIN_TAP, height: MIN_TAP, alignItems: 'center', justifyContent: 'center'},
-  headerCenter: {alignItems: 'center', gap: 1},
-  phase: {...type.eyebrow, color: colors.inkFaint},
-  headerTime: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
-  onDark: {color: colors.onPrimary},
-  onDarkFaint: {color: colors.sage},
+  headerCenter: {alignItems: 'center', gap: 2},
+  phase: {...type.label, color: dark.inkFaint},
+  headerTime: {...type.caption, ...tabular, color: dark.inkMuted},
 
-  main: {flex: 1, alignItems: 'center', paddingTop: spacing.xl, gap: spacing.md},
-  name: {...type.title, color: colors.ink, textAlign: 'center'},
-  round: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
+  main: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg},
+  name: {...type.title, color: dark.ink, textAlign: 'center'},
+  round: {...type.label, color: dark.inkFaint},
 
-  nextWrap: {alignItems: 'center', gap: spacing.xs, marginTop: spacing.xl},
-  nextLabel: {...type.eyebrow, color: colors.sage},
-  nextName: {...type.subheading, color: colors.onPrimary, textAlign: 'center'},
+  nextWrap: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xxl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: radius.md,
+    borderWidth: HAIRLINE,
+    borderColor: dark.line,
+    alignSelf: 'stretch'
+  },
+  nextLabel: {...type.label, color: dark.inkFaint},
+  nextName: {...type.subheading, color: dark.ink, textAlign: 'center'},
 
-  instructionScroll: {alignSelf: 'stretch', marginTop: spacing.sm},
+  instructionScroll: {alignSelf: 'stretch', marginTop: spacing.sm, flexGrow: 0, maxHeight: 220},
   instructionContent: {alignItems: 'center', paddingBottom: spacing.md},
-  instructions: {...type.body, color: colors.inkSoft, textAlign: 'center'},
-  effort: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center', marginTop: spacing.sm},
+  instructions: {...type.body, color: dark.inkMuted, textAlign: 'center', maxWidth: 330},
+  effort: {...type.caption, color: dark.inkFaint, textAlign: 'center', marginTop: spacing.sm},
 
   cueToggle: {marginTop: spacing.md, minHeight: MIN_TAP, justifyContent: 'center', paddingHorizontal: spacing.lg},
-  cueToggleText: {...type.caption, color: colors.primary, fontWeight: '700'},
+  cueToggleText: {...type.label, color: dark.inkMuted},
   cues: {alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.xs},
-  cueRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
-  cueDot: {width: 4, height: 4, borderRadius: 2, backgroundColor: colors.sage},
-  cueText: {...type.small, color: colors.inkSoft, flex: 1},
+  cueRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  cueDot: {width: 3, height: 3, borderRadius: 2, backgroundColor: dark.inkFaint},
+  cueText: {...type.small, color: dark.inkMuted, flex: 1},
 
   controls: {gap: spacing.md, paddingTop: spacing.lg},
   restControls: {flexDirection: 'row', gap: spacing.md},
   restButton: {flex: 1},
   secondaryRow: {flexDirection: 'row', gap: spacing.md},
   secondaryButton: {flex: 1},
-  counter: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center'}
+  counter: {...type.caption, color: dark.inkFaint, textAlign: 'center'}
 });

@@ -224,14 +224,14 @@ export default function ScanSpace() {
       </View>
 
       {reading ? (
-        <Card tone="sage" style={styles.reading}>
+        <Card tone="sunken" style={styles.reading}>
           <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.readingText}>Reading your space…</Text>
         </Card>
       ) : null}
 
       {summary ? (
-        <Card tone="sage" style={styles.summary}>
+        <Card tone="sunken" style={styles.summary}>
           <View style={styles.summaryHead}>
             <Sparkles size={16} color={colors.primary} strokeWidth={2} />
             <Text style={styles.summaryTitle}>What the photo showed</Text>
@@ -303,7 +303,7 @@ export default function ScanSpace() {
           </View>
         </>
       ) : (
-        <Card tone="muted" style={styles.hint}>
+        <Card tone="sunken" style={styles.hint}>
           <Text style={styles.hintText}>
             {apiKey
               ? 'Your photo is sent to Claude with your own API key, read once, and not stored by Steady Move.'
@@ -346,11 +346,11 @@ const styles = StyleSheet.create({
   summaryHead: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
   summaryTitle: {...type.bodyStrong, color: colors.primary},
   summaryBody: {...type.small, color: colors.ink},
-  summaryNote: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
+  summaryNote: {...type.caption, color: colors.inkSoft},
 
   list: {gap: spacing.md},
   build: {marginTop: spacing.xxxl},
 
   hint: {marginTop: spacing.xl},
-  hintText: {...type.caption, color: colors.inkSoft, fontWeight: '400'}
+  hintText: {...type.caption, color: colors.inkSoft}
 });

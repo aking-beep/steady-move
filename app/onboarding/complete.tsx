@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl
   },
   title: {...type.display, color: colors.ink, textAlign: 'center'},
-  line: {...type.heading, color: colors.inkSoft, fontWeight: '400', textAlign: 'center', marginTop: spacing.lg},
+  line: {...type.heading, color: colors.inkSoft, textAlign: 'center', marginTop: spacing.lg},
   lineStrong: {...type.heading, color: colors.primary, textAlign: 'center'},
   footer: {gap: spacing.md}
 });

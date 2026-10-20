@@ -7,7 +7,7 @@ import Animated, {
   withSequence,
   withTiming
 } from 'react-native-reanimated';
-import {colors, spacing, type} from '../theme';
+import {colors, spacing, tabular, type} from '../theme';
 import {useInterval, useReducedMotion} from '../hooks/useMotion';
 
 /** Inhale 4, hold 1, exhale 5 — a calm, repeatable ten-second cycle. */
@@ -135,13 +135,13 @@ const styles = StyleSheet.create({
   circle: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     backgroundColor: colors.surface,
     gap: spacing.xs
   },
-  phase: {...type.eyebrow},
-  count: {...type.display, color: colors.ink, fontWeight: '300'},
-  caption: {...type.caption, color: colors.inkFaint, fontWeight: '400'}
+  phase: {...type.label},
+  count: {...type.statLarge, ...tabular, color: colors.ink},
+  caption: {...type.caption, ...tabular, color: colors.inkFaint}
 });
 
 export default BreathingCircle;

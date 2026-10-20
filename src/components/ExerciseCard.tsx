@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {Repeat, Timer as TimerIcon} from 'lucide-react-native';
 import {SessionBlock} from '../types';
-import {colors, radius, spacing, type} from '../theme';
+import {colors, radius, spacing, tabular, type} from '../theme';
 import {formatSeconds} from '../engine/duration';
 
 interface Props {
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
   icon: {width: 20, alignItems: 'center'},
   text: {flex: 1, gap: 1},
   name: {...type.body, color: colors.ink},
-  nameCurrent: {fontWeight: '700', color: colors.primary},
+  nameCurrent: {fontFamily: type.bodyStrong.fontFamily, color: colors.primary},
   round: {...type.caption, color: colors.inkFaint},
-  meta: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
-  detail: {...type.caption, color: colors.inkSoft},
-  detailCurrent: {color: colors.primary, fontWeight: '700'}
+  meta: {...type.caption, color: colors.inkFaint},
+  detail: {...type.caption, ...tabular, color: colors.inkSoft},
+  detailCurrent: {color: colors.primary}
 });
 
 export default ExerciseCard;

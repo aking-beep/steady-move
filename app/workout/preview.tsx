@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import Animated, {FadeIn} from 'react-native-reanimated';
 import {AlertCircle, ChevronLeft, Info, RefreshCw} from 'lucide-react-native';
 import {Button, Card, ExerciseCard, ScreenContainer} from '../../src/components';
-import {MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
+import {HAIRLINE, MIN_TAP, colors, radius, spacing, tabular, type} from '../../src/theme';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -78,22 +78,17 @@ export default function Preview() {
         </Text>
 
         <View style={styles.meta}>
-          <View style={styles.pill}>
-            <Text style={styles.pillText}>{session.minutes} MIN</Text>
-          </View>
-          <View style={styles.pill}>
-            <Text style={styles.pillText}>{INTENSITY_LABEL[session.intensity].toUpperCase()}</Text>
-          </View>
-          <View style={styles.pill}>
-            <Text style={styles.pillText}>{exerciseCount} BLOCKS</Text>
-          </View>
+          <Text style={styles.metaItem}>{session.minutes} min</Text>
+          <View style={styles.metaDot} />
+          <Text style={styles.metaItem}>{INTENSITY_LABEL[session.intensity]}</Text>
+          <View style={styles.metaDot} />
+          <Text style={styles.metaItem}>{exerciseCount} blocks</Text>
         </View>
 
-        <Text style={styles.focusLabel}>TODAY&rsquo;S FOCUS</Text>
         <Text style={styles.focus}>{session.focus}</Text>
 
         {/* Why this session, in the person's own reported terms. */}
-        <Card tone={session.painFlagged ? 'caution' : 'sage'} style={styles.why}>
+        <Card tone={session.painFlagged ? 'caution' : 'sunken'} style={styles.why}>
           <View style={styles.whyHead}>
             {session.painFlagged ? (
               <AlertCircle size={18} color={colors.caution} strokeWidth={2} />
@@ -111,6 +106,7 @@ export default function Preview() {
 
       {groups.map(group => (
         <View key={group.phase} style={styles.group}>
+          <View style={styles.groupRule} />
           <View style={styles.groupHead}>
             <Text style={styles.groupTitle}>{PHASE_LABEL[group.phase]}</Text>
             <Text style={styles.groupTime}>{formatDuration(group.seconds)}</Text>
@@ -147,38 +143,33 @@ const styles = StyleSheet.create({
     minHeight: MIN_TAP
   },
   headerButton: {width: MIN_TAP, height: MIN_TAP, alignItems: 'center', justifyContent: 'center'},
-  headerTitle: {...type.caption, color: colors.inkSoft, letterSpacing: 0.4},
+  headerTitle: {...type.label, color: colors.inkFaint},
 
-  title: {...type.display, color: colors.ink, marginTop: spacing.lg},
-  meta: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg},
-  pill: {
-    paddingVertical: 6,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted
-  },
-  pillText: {...type.caption, color: colors.inkSoft, letterSpacing: 0.8, fontWeight: '700'},
+  title: {...type.display, color: colors.ink, marginTop: spacing.xl},
 
-  focusLabel: {...type.eyebrow, color: colors.inkFaint, marginTop: spacing.xxl},
-  focus: {...type.subheading, color: colors.ink, marginTop: spacing.xs},
+  meta: {flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg},
+  metaItem: {...type.caption, ...tabular, color: colors.inkSoft},
+  metaDot: {width: 2.5, height: 2.5, borderRadius: 2, backgroundColor: colors.borderStrong},
 
-  why: {marginTop: spacing.xl, gap: spacing.sm},
+  focus: {...type.serifBody, color: colors.inkSoft, marginTop: spacing.lg},
+
+  why: {marginTop: spacing.xxl, gap: spacing.sm, borderRadius: radius.md},
   whyHead: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
-  whyTitle: {...type.bodyStrong, color: colors.primary},
+  whyTitle: {...type.label, color: colors.primary},
   whyBody: {...type.small, color: colors.ink},
-  whyNotice: {...type.caption, color: colors.caution, fontWeight: '400', marginTop: spacing.xs},
+  whyNotice: {...type.caption, color: colors.caution, marginTop: spacing.xs},
 
   group: {marginTop: spacing.xxl},
+  groupRule: {height: HAIRLINE, backgroundColor: colors.border, marginBottom: spacing.md},
   groupHead: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xs
+    marginBottom: spacing.sm
   },
-  groupTitle: {...type.eyebrow, color: colors.inkFaint},
-  groupTime: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
-  groupCard: {padding: spacing.sm},
+  groupTitle: {...type.label, color: colors.ink},
+  groupTime: {...type.caption, ...tabular, color: colors.inkFaint},
+  groupCard: {padding: spacing.sm, borderRadius: radius.md},
 
   actions: {marginTop: spacing.xxxl, gap: spacing.md},
 

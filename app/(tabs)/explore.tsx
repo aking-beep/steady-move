@@ -3,7 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {ChevronRight} from 'lucide-react-native';
 import {Card, ScreenContainer, SectionHeader} from '../../src/components';
-import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
+import {HAIRLINE, TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
 import {EXPLORE_CATEGORIES, ExploreItem, itemsByCategory} from '../../src/data/explore';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
@@ -39,6 +39,7 @@ export default function Explore() {
   return (
     <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
+        <Text style={styles.eyebrow}>The library</Text>
         <Text style={styles.heading} accessibilityRole="header">
           Explore
         </Text>
@@ -83,30 +84,34 @@ export default function Explore() {
 }
 
 const styles = StyleSheet.create({
-  header: {paddingTop: spacing.xl, paddingBottom: spacing.sm, gap: spacing.sm},
-  heading: {...type.display, color: colors.ink},
-  sub: {...type.body, color: colors.inkSoft},
+  header: {paddingTop: spacing.xl, paddingBottom: spacing.sm, gap: spacing.xs},
+  eyebrow: {...type.label, color: colors.inkFaint},
+  heading: {...type.title, color: colors.ink},
+  sub: {...type.small, color: colors.inkSoft, marginTop: spacing.xs},
 
-  list: {gap: spacing.md},
-  row: {flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, minHeight: 76},
+  list: {gap: 0},
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: 0,
+    minHeight: 68,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: HAIRLINE,
+    borderBottomColor: colors.border,
+    backgroundColor: 'transparent'
+  },
   rowText: {flex: 1, gap: 2},
   rowTitle: {...type.bodyStrong, color: colors.ink},
-  rowBody: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
-  rowEnd: {alignItems: 'center', flexDirection: 'row', gap: spacing.sm},
-  rowTime: {
-    ...type.caption,
-    color: colors.inkSoft,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    overflow: 'hidden'
-  },
+  rowBody: {...type.caption, color: colors.inkFaint},
+  rowEnd: {alignItems: 'center', flexDirection: 'row', gap: spacing.md},
+  rowTime: {...type.caption, color: colors.inkSoft, borderRadius: radius.pill, overflow: 'hidden'},
 
   footnote: {
     ...type.caption,
     color: colors.inkFaint,
-    fontWeight: '400',
     textAlign: 'center',
     marginTop: spacing.xxxl,
     marginBottom: spacing.lg

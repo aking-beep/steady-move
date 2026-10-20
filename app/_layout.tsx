@@ -5,6 +5,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {colors} from '../src/theme';
+import {useAppFonts} from '../src/theme/fonts';
 import {useProfileStore} from '../src/store/useProfileStore';
 import {useTodayStore} from '../src/store/useTodayStore';
 import {useHistoryStore} from '../src/store/useHistoryStore';
@@ -17,7 +18,12 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const fontsReady = useAppFonts();
+
+  // The first frame waits for both the stored state and the typefaces, so
+  // nothing is ever seen re-setting itself in a system font.
+  const ready = hydrated && fontsReady;
 
   const hydrateProfile = useProfileStore(state => state.hydrate);
   const hydrateToday = useTodayStore(state => state.hydrate);
@@ -33,7 +39,7 @@ export default function RootLayout() {
         // means "start fresh", never "refuse to open".
       })
       .finally(() => {
-        if (active) setReady(true);
+        if (active) setHydrated(true);
       });
 
     return () => {

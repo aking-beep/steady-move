@@ -2,7 +2,7 @@ import React from 'react';
 import {Pressable, StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
 import {Check} from 'lucide-react-native';
-import {colors, motion, radius, spacing, type} from '../theme';
+import {HAIRLINE, MIN_TAP, colors, motion, radius, spacing, type} from '../theme';
 import {useReducedMotion} from '../hooks/useMotion';
 import {tapSelection} from '../lib/haptics';
 
@@ -164,27 +164,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: 60,
+    minHeight: 62,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    borderWidth: 1.5,
+    // A hairline at rest; the selected state earns the heavier edge.
+    borderWidth: HAIRLINE,
     borderColor: colors.border,
     backgroundColor: colors.surface
   },
-  chipSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 2},
+  chipSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 1.5},
   disabled: {opacity: 0.4},
   chipIcon: {width: 24, alignItems: 'center'},
   chipText: {flex: 1, gap: 1},
   chipLabel: {...type.bodyStrong, color: colors.ink},
   chipLabelSelected: {color: colors.primary},
-  chipDetail: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
+  chipDetail: {...type.caption, color: colors.inkFaint},
   chipDetailSelected: {color: colors.inkSoft},
   tick: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.5,
+    borderWidth: HAIRLINE * 2,
     borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center'
@@ -194,23 +195,23 @@ const styles = StyleSheet.create({
   segment: {flexDirection: 'row', gap: spacing.sm},
   segmentItem: {
     flex: 1,
-    minHeight: 72,
+    minHeight: MIN_TAP + 28,
     paddingVertical: spacing.md,
     // Tight horizontal padding: a three-up row has to fit a word like
     // "Occasional" without breaking it across lines.
     paddingHorizontal: spacing.xs,
     borderRadius: radius.md,
-    borderWidth: 1.5,
+    borderWidth: HAIRLINE,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2
   },
-  segmentItemSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 2},
-  segmentLabel: {...type.bodyStrong, fontSize: 15, color: colors.ink, textAlign: 'center'},
+  segmentItemSelected: {borderColor: colors.primary, backgroundColor: colors.primarySoft, borderWidth: 1.5},
+  segmentLabel: {...type.smallStrong, color: colors.ink, textAlign: 'center'},
   segmentLabelSelected: {color: colors.primary},
-  segmentDetail: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center'},
+  segmentDetail: {...type.caption, color: colors.inkFaint, textAlign: 'center'},
   segmentDetailSelected: {color: colors.inkSoft}
 });
 

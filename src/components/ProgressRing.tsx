@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import Svg, {Circle} from 'react-native-svg';
 import Animated, {useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
-import {colors, motion, type} from '../theme';
+import {colors, motion, tabular, type} from '../theme';
 import {useReducedMotion} from '../hooks/useMotion';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -29,7 +29,7 @@ interface Props {
 export function ProgressRing({
   progress,
   size = 220,
-  thickness = 10,
+  thickness = 7,
   color = colors.primary,
   trackColor = colors.surfaceMuted,
   children,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   root: {alignItems: 'center', justifyContent: 'center'},
   svg: {position: 'absolute'},
   center: {alignItems: 'center', justifyContent: 'center'},
-  label: {...type.caption, color: colors.inkSoft, marginTop: 2},
+  label: {...type.caption, color: colors.inkSoft, marginTop: 2, ...tabular},
   track: {overflow: 'hidden', width: '100%'},
   fill: {height: '100%'}
 });

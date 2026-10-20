@@ -1,51 +1,76 @@
 import React from 'react';
 import {Pressable, StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
-import {MIN_TAP, colors, elevation, motion, radius, spacing, type} from '../theme';
+import {HAIRLINE, Scheme, light, motion, radius, spacing, tabular, type} from '../theme';
 import {useReducedMotion} from '../hooks/useMotion';
+
+type Tone = 'surface' | 'sunken' | 'accent' | 'highlight' | 'caution' | 'bare';
 
 interface CardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** Makes the whole card a button. */
   onPress?: () => void;
-  tone?: 'surface' | 'muted' | 'primary' | 'sage' | 'clay' | 'caution';
-  raised?: boolean;
+  tone?: Tone;
+  /** Lifts the card off the page. Used sparingly — most cards do not float. */
+  floating?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  scheme?: Scheme;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const TONES: Record<NonNullable<CardProps['tone']>, ViewStyle> = {
-  surface: {backgroundColor: colors.surface},
-  muted: {backgroundColor: colors.surfaceMuted},
-  primary: {backgroundColor: colors.primary},
-  sage: {backgroundColor: colors.sageSoft},
-  clay: {backgroundColor: colors.claySoft},
-  caution: {backgroundColor: colors.cautionSoft}
-};
+function toneStyle(tone: Tone, scheme: Scheme): ViewStyle {
+  switch (tone) {
+    case 'sunken':
+      return {backgroundColor: scheme.bgSunken};
+    case 'accent':
+      return {backgroundColor: scheme.accent};
+    case 'highlight':
+      return {backgroundColor: scheme.highlightSoft};
+    case 'caution':
+      return {backgroundColor: scheme.cautionSoft};
+    case 'bare':
+      return {backgroundColor: 'transparent'};
+    case 'surface':
+    default:
+      // Tone plus a hairline, never a drop shadow.
+      return {backgroundColor: scheme.surface, borderWidth: HAIRLINE, borderColor: scheme.line};
+  }
+}
 
 export function Card({
   children,
   style,
   onPress,
   tone = 'surface',
-  raised = false,
+  floating = false,
   accessibilityLabel,
-  accessibilityHint
+  accessibilityHint,
+  scheme = light
 }: CardProps) {
   const reduced = useReducedMotion();
   const pressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{scale: reduced ? 1 : 1 - pressed.value * 0.02}],
-    opacity: 1 - pressed.value * 0.08
+    transform: [{scale: reduced ? 1 : 1 - pressed.value * 0.012}],
+    opacity: 1 - pressed.value * 0.06
   }));
 
-  const content = [styles.card, TONES[tone], raised ? elevation.raised : elevation.card, style];
+  const base = [
+    styles.card,
+    toneStyle(tone, scheme),
+    floating && {
+      shadowColor: '#000000',
+      shadowOpacity: scheme.name === 'dark' ? 0.4 : 0.1,
+      shadowRadius: 24,
+      shadowOffset: {width: 0, height: 12},
+      elevation: 8
+    },
+    style
+  ];
 
-  if (!onPress) return <View style={content}>{children}</View>;
+  if (!onPress) return <View style={base}>{children}</View>;
 
   return (
     <AnimatedPressable
@@ -59,7 +84,7 @@ export function Card({
       onPressOut={() => {
         pressed.value = withTiming(0, {duration: motion.base});
       }}
-      style={[...content, animatedStyle]}
+      style={[...base, animatedStyle]}
     >
       {children}
     </AnimatedPressable>
@@ -69,64 +94,105 @@ export function Card({
 interface SectionHeaderProps {
   title: string;
   subtitle?: string;
-  /** Small all-caps line above the title. */
   eyebrow?: string;
   action?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  scheme?: Scheme;
 }
 
-export function SectionHeader({title, subtitle, eyebrow, action, style}: SectionHeaderProps) {
+/**
+ * An editorial section head: a hairline rule, a small-caps label on it, then
+ * the title. The rule is what makes a list of sections read as a publication
+ * rather than a settings screen.
+ */
+export function SectionHeader({
+  title,
+  subtitle,
+  eyebrow,
+  action,
+  style,
+  scheme = light
+}: SectionHeaderProps) {
   return (
-    <View style={[styles.sectionHeader, style]}>
-      <View style={styles.sectionText}>
-        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          {title}
-        </Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+    <View style={[styles.section, style]}>
+      <View style={[styles.rule, {backgroundColor: scheme.line}]} />
+      {eyebrow ? (
+        <Text style={[type.label, {color: scheme.inkFaint, marginTop: spacing.md}]}>{eyebrow}</Text>
+      ) : null}
+      <View style={styles.sectionRow}>
+        <View style={styles.sectionText}>
+          <Text style={[type.heading, {color: scheme.ink}]} accessibilityRole="header">
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={[type.small, {color: scheme.inkMuted, marginTop: 3}]}>{subtitle}</Text>
+          ) : null}
+        </View>
+        {action}
       </View>
-      {action}
     </View>
   );
 }
 
-interface MetricCardProps {
+interface StatProps {
   value: string;
   label: string;
-  /** Short line under the value, e.g. "of 5 days". */
   detail?: string;
-  tone?: CardProps['tone'];
+  /** Renders the number at the larger of the two statistic sizes. */
+  large?: boolean;
   style?: StyleProp<ViewStyle>;
-  icon?: React.ReactNode;
+  scheme?: Scheme;
+  tint?: string;
 }
 
-export function MetricCard({value, label, detail, tone = 'surface', style, icon}: MetricCardProps) {
-  const onDark = tone === 'primary';
+/**
+ * A statistic, set the way the research says it reads best: the number
+ * oversized and tabular, the label small and quiet beneath it.
+ */
+export function Stat({value, label, detail, large = false, style, scheme = light, tint}: StatProps) {
   return (
-    <Card
-      tone={tone}
-      style={[styles.metric, style]}
-      // One spoken string reads far better than three separate fragments.
+    <View
+      style={[styles.stat, style]}
+      accessible
       accessibilityLabel={`${label}: ${value}${detail ? `, ${detail}` : ''}`}
     >
-      <View
-        accessible
-        accessibilityLabel={`${label}: ${value}${detail ? `, ${detail}` : ''}`}
-        style={styles.metricInner}
+      <Text
+        style={[large ? type.statLarge : type.stat, tabular, {color: tint ?? scheme.ink}]}
+        numberOfLines={1}
+        allowFontScaling={false}
       >
-        {icon ? <View style={styles.metricIcon}>{icon}</View> : null}
-        <Text style={[styles.metricValue, onDark && {color: colors.onPrimary}]} numberOfLines={1}>
-          {value}
+        {value}
+      </Text>
+      <Text style={[type.caption, {color: scheme.inkMuted, marginTop: 2}]} numberOfLines={2}>
+        {label}
+      </Text>
+      {detail ? (
+        <Text style={[type.caption, {color: scheme.inkFaint}]} numberOfLines={1}>
+          {detail}
         </Text>
-        <Text style={[styles.metricLabel, onDark && {color: colors.primarySoft}]} numberOfLines={2}>
-          {label}
-        </Text>
-        {detail ? (
-          <Text style={[styles.metricDetail, onDark && {color: colors.primarySoft}]} numberOfLines={1}>
-            {detail}
-          </Text>
-        ) : null}
-      </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Backwards-compatible wrapper while screens migrate to `Stat`. */
+export function MetricCard({
+  value,
+  label,
+  detail,
+  style,
+  tone = 'surface'
+}: {
+  value: string;
+  label: string;
+  detail?: string;
+  style?: StyleProp<ViewStyle>;
+  tone?: Tone;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <Card tone={tone} style={[styles.metric, style]}>
+      <Stat value={value} label={label} detail={detail} />
     </Card>
   );
 }
@@ -137,15 +203,17 @@ interface EmptyStateProps {
   icon?: React.ReactNode;
   action?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  scheme?: Scheme;
 }
 
-/** Shown wherever there is genuinely nothing yet. Never an error, never a nag. */
-export function EmptyState({title, body, icon, action, style}: EmptyStateProps) {
+export function EmptyState({title, body, icon, action, style, scheme = light}: EmptyStateProps) {
   return (
-    <Card tone="muted" style={[styles.empty, style]}>
-      {icon ? <View style={styles.emptyIcon}>{icon}</View> : null}
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyBody}>{body}</Text>
+    <Card tone="sunken" style={[styles.empty, style]} scheme={scheme}>
+      {icon ? <View style={{marginBottom: spacing.sm}}>{icon}</View> : null}
+      <Text style={[type.subheading, {color: scheme.ink, textAlign: 'center'}]}>{title}</Text>
+      <Text style={[type.small, {color: scheme.inkMuted, textAlign: 'center', maxWidth: 300}]}>
+        {body}
+      </Text>
       {action ? <View style={styles.emptyAction}>{action}</View> : null}
     </Card>
   );
@@ -154,31 +222,22 @@ export function EmptyState({title, body, icon, action, style}: EmptyStateProps) 
 const styles = StyleSheet.create({
   card: {borderRadius: radius.lg, padding: spacing.xl},
 
-  sectionHeader: {
+  section: {marginTop: spacing.xxxl, marginBottom: spacing.lg},
+  rule: {height: StyleSheet.hairlineWidth, width: '100%'},
+  sectionRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: spacing.md,
-    marginTop: spacing.xxxl,
-    marginBottom: spacing.lg
+    marginTop: spacing.sm
   },
-  sectionText: {flex: 1, gap: 2},
-  eyebrow: {...type.eyebrow, color: colors.inkFaint},
-  sectionTitle: {...type.heading, color: colors.ink},
-  sectionSubtitle: {...type.small, color: colors.inkSoft},
+  sectionText: {flex: 1},
 
+  stat: {flex: 1, gap: 0},
   metric: {flex: 1, padding: spacing.lg, minHeight: 104, justifyContent: 'center'},
-  metricInner: {gap: 2},
-  metricIcon: {marginBottom: spacing.xs},
-  metricValue: {...type.title, color: colors.ink},
-  metricLabel: {...type.caption, color: colors.inkSoft},
-  metricDetail: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
 
   empty: {alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxxl},
-  emptyIcon: {marginBottom: spacing.xs},
-  emptyTitle: {...type.subheading, color: colors.ink, textAlign: 'center'},
-  emptyBody: {...type.small, color: colors.inkSoft, textAlign: 'center', maxWidth: 280},
-  emptyAction: {marginTop: spacing.md, alignSelf: 'stretch', minHeight: MIN_TAP}
+  emptyAction: {marginTop: spacing.lg, alignSelf: 'stretch'}
 });
 
 export default Card;

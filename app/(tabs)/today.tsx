@@ -1,16 +1,20 @@
 import React, {useCallback, useMemo} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Animated, {FadeInDown} from 'react-native-reanimated';
-import {ArrowRight, Camera, Flame, Footprints, Heart, MapPin, Timer as TimerIcon, Wind} from 'lucide-react-native';
+import {ArrowUpRight, Camera, Footprints, Heart, Timer as TimerIcon, Wind} from 'lucide-react-native';
+import {Button, Card, ScreenContainer, SectionHeader, Stat} from '../../src/components';
 import {
-  Button,
-  Card,
-  ProgressBar,
-  ScreenContainer,
-  SectionHeader
-} from '../../src/components';
-import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
+  HAIRLINE,
+  MIN_TAP,
+  TAB_BAR_INSET,
+  colors,
+  dark,
+  radius,
+  spacing,
+  tabular,
+  type
+} from '../../src/theme';
 import {useProfileStore} from '../../src/store/useProfileStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
@@ -23,10 +27,10 @@ import {INTENSITY_LABEL} from '../../src/engine/planner';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 
 const QUICK_ICONS: Record<string, React.ReactNode> = {
-  'quick-full-body': <TimerIcon size={20} color={colors.primary} strokeWidth={2} />,
-  'mob-full-body': <Heart size={20} color={colors.primary} strokeWidth={2} />,
-  'run-easy-20': <Footprints size={20} color={colors.primary} strokeWidth={2} />,
-  'mind-2': <Wind size={20} color={colors.primary} strokeWidth={2} />
+  'quick-full-body': <TimerIcon size={17} color={colors.primary} strokeWidth={1.8} />,
+  'mob-full-body': <Heart size={17} color={colors.primary} strokeWidth={1.8} />,
+  'run-easy-20': <Footprints size={17} color={colors.primary} strokeWidth={1.8} />,
+  'mind-2': <Wind size={17} color={colors.primary} strokeWidth={1.8} />
 };
 
 export default function Today() {
@@ -44,9 +48,6 @@ export default function Today() {
 
   const summary = useMemo(() => getProgress(logs), [logs]);
   const weeklyTarget = profile?.weeklyTarget ?? 4;
-
-  // A session that was started and not finished is offered back before
-  // anything else, so a workout is never quietly lost.
   const hasUnfinished = Boolean(activeSession && activeStartedAt);
 
   const quickMoves = useMemo(
@@ -63,12 +64,10 @@ export default function Today() {
     async (itemId: string) => {
       const item = EXPLORE_ITEMS.find(entry => entry.id === itemId);
       if (!item || !profile) return;
-
       if (item.breathingMinutes) {
         router.push({pathname: '/activity/breathe', params: {minutes: String(item.breathingMinutes)}});
         return;
       }
-
       const built = buildExploreSession({item, profile, history: logs, checkIn});
       await setSession(built);
       router.push('/workout/preview');
@@ -76,135 +75,122 @@ export default function Today() {
     [checkIn, logs, profile, router, setSession]
   );
 
-  const rise = (index: number) =>
-    reduced ? undefined : FadeInDown.duration(380).delay(60 * index);
+  const rise = (index: number) => (reduced ? undefined : FadeInDown.duration(420).delay(70 * index));
+
+  const today = useMemo(
+    () => new Date().toLocaleDateString(undefined, {weekday: 'long', day: 'numeric', month: 'long'}),
+    []
+  );
+
+  // The hero says one thing and offers one action. Which one depends only on
+  // where the person is in the day's loop.
+  const hero = hasUnfinished
+    ? {
+        label: 'In progress',
+        title: activeSession?.title ?? 'Your session',
+        body: 'You started this and stepped away. Pick it up where you left off.',
+        cta: 'Resume session',
+        onPress: () => router.push('/workout/session')
+      }
+    : session
+      ? {
+          label: 'Today’s session',
+          title: session.title,
+          body: session.focus,
+          meta: `${session.minutes} min · ${INTENSITY_LABEL[session.intensity]}`,
+          cta: 'View session',
+          onPress: () => router.push('/workout/preview')
+        }
+      : {
+          label: 'Daily check-in',
+          title: 'How are you arriving today?',
+          body: 'Energy, soreness and time decide what today should be.',
+          cta: 'Check in',
+          onPress: openCheckIn
+        };
 
   return (
     <ScreenContainer bottomInset={TAB_BAR_INSET}>
-      <View style={styles.header}>
+      <View style={styles.head}>
         <Text style={styles.greeting}>{greeting()}</Text>
-        <Text style={styles.heading} accessibilityRole="header">
-          Today
-        </Text>
+        <Text style={styles.date}>{today}</Text>
       </View>
 
-      {/* ——— Hero: resume, preview, or check in ——— */}
+      {/* ——— Hero ——— */}
       <Animated.View entering={rise(0)}>
-        {hasUnfinished ? (
-          <Card tone="primary" style={styles.hero}>
-            <Text style={styles.heroEyebrow}>SESSION IN PROGRESS</Text>
-            <Text style={styles.heroTitleDark}>{activeSession?.title}</Text>
-            <Text style={styles.heroBodyDark}>
-              You started this and stepped away. Pick it up where you left off, or finish it and
-              save what you did.
-            </Text>
-            <Button
-              label="Resume session"
-              variant="onDark"
-              onPress={() => router.push('/workout/session')}
-              style={styles.heroButton}
-            />
-          </Card>
-        ) : session ? (
-          <Card tone="primary" style={styles.hero}>
-            <Text style={styles.heroEyebrow}>TODAY&rsquo;S SESSION</Text>
-            <Text style={styles.heroTitleDark}>{session.title}</Text>
-            <View style={styles.heroMeta}>
-              <Text style={styles.heroMetaText}>{session.minutes} MIN</Text>
-              <View style={styles.dot} />
-              <Text style={styles.heroMetaText}>{INTENSITY_LABEL[session.intensity].toUpperCase()}</Text>
-            </View>
-            <Text style={styles.heroBodyDark}>{session.focus}</Text>
-            <Button
-              label="View session"
-              variant="onDark"
-              onPress={() => router.push('/workout/preview')}
-              style={styles.heroButton}
-            />
-          </Card>
-        ) : (
-          <Card tone="primary" style={styles.hero}>
-            <Text style={styles.heroEyebrow}>DAILY CHECK-IN</Text>
-            <Text style={styles.heroTitleDark}>How are you arriving today?</Text>
-            <Text style={styles.heroBodyDark}>
-              Energy, soreness and time help Steady Move choose a session that fits the day you are
-              actually having.
-            </Text>
-            <Button
-              label="Check in"
-              variant="onDark"
-              onPress={openCheckIn}
-              style={styles.heroButton}
-              icon={<ArrowRight size={18} color={colors.primary} strokeWidth={2.5} />}
-            />
-          </Card>
-        )}
-      </Animated.View>
-
-      {/* ——— Somewhere other than usual ——— */}
-      <Animated.View entering={rise(1)}>
-        <Card
-          style={styles.placeCard}
-          onPress={() => router.push('/space')}
-          accessibilityLabel="Choose where you are"
-          accessibilityHint="Builds a session for a hotel room, an airport, a desk or anywhere else"
-        >
-          <View style={styles.placeIcon}>
-            <MapPin size={18} color={colors.primary} strokeWidth={2} />
-          </View>
-          <View style={styles.placeText}>
-            <Text style={styles.placeTitle}>Somewhere different today?</Text>
-            <Text style={styles.placeBody}>
-              A hotel room, a desk, an airport — or photograph the space you are in.
-            </Text>
-          </View>
-          <Camera size={18} color={colors.inkFaint} strokeWidth={2} />
-        </Card>
-      </Animated.View>
-
-      {/* ——— This week ——— */}
-      <Animated.View entering={rise(2)}>
-        <SectionHeader title="This week" subtitle={progressMessage(summary, weeklyTarget)} />
-        <Card style={styles.week}>
-          <View style={styles.weekTop}>
-            <View style={styles.weekMetric}>
-              <Text style={styles.weekValue}>
-                {summary.weekDays}
-                <Text style={styles.weekOf}>{` / ${weeklyTarget}`}</Text>
-              </Text>
-              <Text style={styles.weekLabel}>Days moved</Text>
-            </View>
-            <View style={styles.weekDivider} />
-            <View style={styles.weekMetric}>
-              <Text style={styles.weekValue}>{summary.minutesThisWeek}</Text>
-              <Text style={styles.weekLabel}>Minutes</Text>
-            </View>
-            <View style={styles.weekDivider} />
-            <View style={styles.weekMetric}>
-              <View style={styles.streakRow}>
-                <Text style={styles.weekValue}>{summary.streak}</Text>
-                {summary.streak > 0 ? (
-                  <Flame size={18} color={colors.clay} strokeWidth={2} />
-                ) : null}
-              </View>
-              <Text style={styles.weekLabel}>Day streak</Text>
-            </View>
-          </View>
-
-          <ProgressBar
-            progress={weeklyTarget > 0 ? summary.weekDays / weeklyTarget : 0}
-            color={colors.sage}
-            accessibilityLabel={`${summary.weekDays} of ${weeklyTarget} movement days this week`}
+        <Card tone="accent" style={styles.hero}>
+          <Text style={styles.heroLabel}>{hero.label}</Text>
+          <Text style={styles.heroTitle}>{hero.title}</Text>
+          {hero.meta ? <Text style={styles.heroMeta}>{hero.meta}</Text> : null}
+          <Text style={styles.heroBody}>{hero.body}</Text>
+          <Button
+            label={hero.cta}
+            variant="primary"
+            scheme={dark}
+            onPress={hero.onPress}
+            style={styles.heroButton}
+            icon={<ArrowUpRight size={17} color={colors.primary} strokeWidth={2.2} />}
           />
         </Card>
       </Animated.View>
 
+      {/* ——— Where you are ——— */}
+      <Animated.View entering={rise(1)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Choose where you are"
+          accessibilityHint="Builds a session for a hotel room, an airport, a desk or anywhere else"
+          onPress={() => router.push('/space')}
+          style={styles.placeRow}
+        >
+          <View style={styles.placeText}>
+            <Text style={styles.placeTitle}>Somewhere different today?</Text>
+            <Text style={styles.placeBody}>A hotel room, a desk, an airport — or scan the space.</Text>
+          </View>
+          <Camera size={17} color={colors.inkFaint} strokeWidth={1.8} />
+        </Pressable>
+      </Animated.View>
+
+      {/* ——— This week ——— */}
+      <Animated.View entering={rise(2)}>
+        <SectionHeader
+          eyebrow="This week"
+          title={`${summary.weekDays} of ${weeklyTarget} days`}
+          subtitle={progressMessage(summary, weeklyTarget)}
+        />
+
+        <View style={styles.stats}>
+          <Stat value={`${summary.minutesThisWeek}`} label="Minutes" />
+          <View style={styles.statDivider} />
+          <Stat
+            value={`${summary.streak}`}
+            label="Day streak"
+            tint={summary.streak > 0 ? colors.clay : undefined}
+          />
+          <View style={styles.statDivider} />
+          <Stat value={`${summary.totalSessions}`} label="Sessions" />
+        </View>
+
+        <View style={styles.week}>
+          {summary.chart.map(day => (
+            <View key={day.key} style={styles.dayCol}>
+              <View
+                style={[
+                  styles.dayBar,
+                  day.done && styles.dayBarDone,
+                  day.isToday && !day.done && styles.dayBarToday,
+                  day.isFuture && styles.dayBarFuture
+                ]}
+              />
+              <Text style={[styles.dayLabel, day.isToday && styles.dayLabelToday]}>{day.label}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+
       {/* ——— Quick move ——— */}
       <Animated.View entering={rise(3)}>
-        <SectionHeader
-          title="Quick move"
-          subtitle="Start something now, without a check-in"
-        />
+        <SectionHeader eyebrow="Quick move" title="Start something now" />
         <View style={styles.quickGrid}>
           {quickMoves.map(item =>
             item ? (
@@ -219,9 +205,7 @@ export default function Today() {
                 <Text style={styles.quickTitle} numberOfLines={2}>
                   {item.title}
                 </Text>
-                <Text style={styles.quickMeta}>
-                  {item.breathingMinutes ?? item.minutes} min
-                </Text>
+                <Text style={styles.quickMeta}>{item.breathingMinutes ?? item.minutes} min</Text>
               </Card>
             ) : null
           )}
@@ -229,81 +213,72 @@ export default function Today() {
       </Animated.View>
 
       <Text style={styles.footnote}>
-        Steady Move is general movement guidance, not medical advice. Move within what feels right
-        for you today.
+        General movement guidance, not medical advice. Move within what feels right today.
       </Text>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: 2},
-  greeting: {...type.small, color: colors.inkSoft},
-  heading: {...type.display, color: colors.ink},
+  head: {paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xs},
+  greeting: {...type.label, color: colors.inkFaint},
+  date: {...type.title, color: colors.ink},
 
-  hero: {gap: spacing.sm},
-  heroEyebrow: {...type.eyebrow, color: colors.sage},
-  heroTitleDark: {...type.heading, color: colors.onPrimary},
-  heroBodyDark: {...type.small, color: colors.primarySoft, marginTop: 2},
-  heroMeta: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2},
-  heroMetaText: {...type.caption, color: colors.sage, letterSpacing: 1},
-  dot: {width: 3, height: 3, borderRadius: 2, backgroundColor: colors.sage},
-  heroButton: {marginTop: spacing.lg},
+  hero: {padding: spacing.xxl, borderRadius: radius.xl},
+  heroLabel: {...type.label, color: colors.sage},
+  heroTitle: {...type.title, color: colors.onPrimary, marginTop: spacing.md},
+  heroMeta: {...type.caption, color: colors.sage, marginTop: spacing.sm, ...tabular},
+  heroBody: {...type.small, color: 'rgba(242,239,231,0.72)', marginTop: spacing.sm},
+  heroButton: {marginTop: spacing.xl},
 
-  placeCard: {
+  placeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
-    padding: spacing.lg
+    paddingVertical: spacing.lg,
+    minHeight: MIN_TAP
   },
-  placeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  placeText: {flex: 1, gap: 2},
+  placeText: {flex: 1},
   placeTitle: {...type.bodyStrong, color: colors.ink},
-  placeBody: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
+  placeBody: {...type.caption, color: colors.inkFaint, marginTop: 1},
 
-  week: {gap: spacing.lg},
-  weekTop: {flexDirection: 'row', alignItems: 'center'},
-  weekMetric: {flex: 1, gap: 2},
-  weekDivider: {width: StyleSheet.hairlineWidth, height: 36, backgroundColor: colors.border, marginHorizontal: spacing.md},
-  weekValue: {...type.title, color: colors.ink},
-  weekOf: {...type.subheading, color: colors.inkFaint},
-  weekLabel: {...type.caption, color: colors.inkSoft, fontWeight: '400'},
-  streakRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.xs},
+  stats: {flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg},
+  statDivider: {width: HAIRLINE, alignSelf: 'stretch', backgroundColor: colors.border},
+
+  week: {flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xxl},
+  dayCol: {flex: 1, gap: spacing.sm, alignItems: 'center'},
+  dayBar: {height: 4, borderRadius: 2, alignSelf: 'stretch', backgroundColor: colors.surfaceMuted},
+  dayBarDone: {backgroundColor: colors.primary, height: 6},
+  dayBarToday: {backgroundColor: colors.sage},
+  dayBarFuture: {opacity: 0.45},
+  dayLabel: {...type.caption, color: colors.inkFaint, fontSize: 11},
+  dayLabelToday: {color: colors.primary},
 
   quickGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md},
   quickCard: {
-    // Two per row, accounting for the gap between them.
-    width: '47.5%',
+    width: '47.6%',
     flexGrow: 1,
     padding: spacing.lg,
-    gap: spacing.xs,
-    minHeight: 124,
-    justifyContent: 'flex-end'
+    minHeight: 128,
+    justifyContent: 'flex-end',
+    borderRadius: radius.md
   },
   quickIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
+    width: 36,
+    height: 36,
+    borderRadius: radius.xs,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm
+    marginBottom: spacing.md
   },
-  quickTitle: {...type.bodyStrong, color: colors.ink},
-  quickMeta: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
+  quickTitle: {...type.smallStrong, color: colors.ink},
+  quickMeta: {...type.caption, color: colors.inkFaint, marginTop: 1},
 
   footnote: {
     ...type.caption,
     color: colors.inkFaint,
-    fontWeight: '400',
     textAlign: 'center',
     marginTop: spacing.xxxl,
     marginBottom: spacing.lg

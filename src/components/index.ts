@@ -2,7 +2,7 @@
 
 export {Button} from './Button';
 export type {ButtonVariant, ButtonSize} from './Button';
-export {Card, SectionHeader, MetricCard, EmptyState} from './Card';
+export {Card, SectionHeader, Stat, MetricCard, EmptyState} from './Card';
 export {ChoiceChip, SegmentedChoice} from './ChoiceChip';
 export {ProgressRing, ProgressBar} from './ProgressRing';
 export {Timer} from './Timer';

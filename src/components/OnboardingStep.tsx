@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   options: {marginTop: spacing.xxl, gap: spacing.md},
 
   footer: {gap: spacing.md, paddingTop: spacing.xl},
-  footnote: {...type.caption, color: colors.inkFaint, fontWeight: '400', textAlign: 'center'}
+  footnote: {...type.caption, color: colors.inkFaint, textAlign: 'center'}
 });
 
 export default OnboardingStep;

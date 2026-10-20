@@ -1,16 +1,9 @@
 import React, {useMemo} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
-import {Check, Flame} from 'lucide-react-native';
-import {
-  Button,
-  Card,
-  EmptyState,
-  MetricCard,
-  ScreenContainer,
-  SectionHeader
-} from '../../src/components';
-import {TAB_BAR_INSET, colors, radius, spacing, type} from '../../src/theme';
+import {Check} from 'lucide-react-native';
+import {Button, Card, EmptyState, ScreenContainer, SectionHeader, Stat} from '../../src/components';
+import {HAIRLINE, TAB_BAR_INSET, colors, radius, spacing, tabular, type} from '../../src/theme';
 import {SessionType} from '../../src/types';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
 import {useProfileStore} from '../../src/store/useProfileStore';
@@ -39,10 +32,30 @@ export default function Progress() {
   return (
     <ScreenContainer bottomInset={TAB_BAR_INSET}>
       <View style={styles.header}>
+        <Text style={styles.eyebrow}>Your practice</Text>
         <Text style={styles.heading} accessibilityRole="header">
           Progress
         </Text>
         <Text style={styles.sub}>{progressMessage(summary, weeklyTarget)}</Text>
+      </View>
+
+      {/* ——— Headline numbers ——— */}
+      <View style={styles.statRow}>
+        <Stat value={`${summary.weekDays}`} label="Days this week" detail={`of ${weeklyTarget}`} large />
+        <View style={styles.statDivider} />
+        <Stat
+          value={`${summary.streak}`}
+          label="Day streak"
+          detail={summary.bestStreak > 0 ? `best ${summary.bestStreak}` : undefined}
+          large
+          tint={summary.streak > 0 ? colors.clay : undefined}
+        />
+      </View>
+
+      <View style={styles.statRow}>
+        <Stat value={`${summary.minutesThisWeek}`} label="Minutes this week" />
+        <View style={styles.statDivider} />
+        <Stat value={`${summary.totalSessions}`} label="Sessions all time" />
       </View>
 
       {/* ——— Week strip ——— */}
@@ -76,26 +89,6 @@ export default function Progress() {
           ))}
         </View>
       </Card>
-
-      {/* ——— Headline numbers ——— */}
-      <View style={styles.metrics}>
-        <MetricCard
-          value={`${summary.weekDays}/${weeklyTarget}`}
-          label="Movement days"
-          detail="this week"
-        />
-        <MetricCard
-          value={`${summary.streak}`}
-          label="Day streak"
-          detail={summary.bestStreak > 0 ? `best ${summary.bestStreak}` : undefined}
-          tone={summary.streak > 0 ? 'clay' : 'surface'}
-          icon={summary.streak > 0 ? <Flame size={18} color={colors.clay} strokeWidth={2} /> : undefined}
-        />
-      </View>
-      <View style={styles.metrics}>
-        <MetricCard value={`${summary.minutesThisWeek}`} label="Minutes" detail="this week" />
-        <MetricCard value={`${summary.totalSessions}`} label="Total sessions" detail="all time" />
-      </View>
 
       {/* ——— What you did this week ——— */}
       <SectionHeader title="This week by type" />
@@ -157,63 +150,65 @@ export default function Progress() {
 }
 
 const styles = StyleSheet.create({
-  header: {paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xs},
-  heading: {...type.display, color: colors.ink},
-  sub: {...type.body, color: colors.inkSoft},
+  header: {paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xs},
+  eyebrow: {...type.label, color: colors.inkFaint},
+  heading: {...type.title, color: colors.ink},
+  sub: {...type.small, color: colors.inkSoft, marginTop: 2},
 
-  weekCard: {gap: spacing.lg},
-  weekTitle: {...type.eyebrow, color: colors.inkFaint},
+  statRow: {flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl, marginBottom: spacing.xxl},
+  statDivider: {width: HAIRLINE, alignSelf: 'stretch', backgroundColor: colors.border},
+
+  weekCard: {gap: spacing.lg, borderRadius: radius.md},
+  weekTitle: {...type.label, color: colors.inkFaint},
   strip: {flexDirection: 'row', justifyContent: 'space-between'},
   dayColumn: {alignItems: 'center', gap: spacing.sm, flex: 1},
   dayDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: HAIRLINE,
     borderColor: colors.border,
     backgroundColor: colors.canvas,
     alignItems: 'center',
     justifyContent: 'center'
   },
   dayDone: {backgroundColor: colors.primary, borderColor: colors.primary},
-  dayToday: {borderColor: colors.sage, borderWidth: 2.5},
-  dayFuture: {opacity: 0.45},
-  dayLabel: {...type.caption, color: colors.inkFaint},
-  dayLabelToday: {color: colors.primary, fontWeight: '700'},
+  dayToday: {borderColor: colors.sage, borderWidth: 1.5},
+  dayFuture: {opacity: 0.4},
+  dayLabel: {...type.caption, color: colors.inkFaint, fontSize: 11},
+  dayLabelToday: {color: colors.primary},
 
-  metrics: {flexDirection: 'row', gap: spacing.md, marginTop: spacing.md},
-
-  breakdown: {gap: spacing.sm},
-  breakdownRow: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32},
+  breakdown: {gap: 0, borderRadius: radius.md},
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 42,
+    borderBottomWidth: HAIRLINE,
+    borderBottomColor: colors.border
+  },
   breakdownLabel: {...type.body, color: colors.ink},
-  breakdownValue: {...type.caption, color: colors.inkSoft},
+  breakdownValue: {...type.caption, ...tabular, color: colors.inkSoft},
 
-  recent: {gap: spacing.xs},
+  recent: {gap: 0, borderRadius: radius.md},
   recentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 48
+    paddingVertical: spacing.md,
+    minHeight: 52,
+    borderBottomWidth: HAIRLINE,
+    borderBottomColor: colors.border
   },
   recentText: {flex: 1, gap: 1},
-  recentTitle: {...type.bodyStrong, color: colors.ink},
-  recentMeta: {...type.caption, color: colors.inkFaint, fontWeight: '400'},
-  recentFeel: {
-    ...type.caption,
-    color: colors.primary,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    overflow: 'hidden'
-  },
+  recentTitle: {...type.smallStrong, color: colors.ink},
+  recentMeta: {...type.caption, color: colors.inkFaint},
+  recentFeel: {...type.label, color: colors.primary},
 
   footnote: {
     ...type.caption,
     color: colors.inkFaint,
-    fontWeight: '400',
     textAlign: 'center',
     marginTop: spacing.xxxl,
     marginBottom: spacing.lg

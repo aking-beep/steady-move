@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {colors, spacing, type} from '../theme';
+import {Scheme, colors, light, spacing, tabular, type} from '../theme';
 import {formatSeconds} from '../engine/duration';
 import {ProgressRing} from './ProgressRing';
 
@@ -17,6 +17,7 @@ interface Props {
   /** Replaces the clock, e.g. with a rep target. */
   value?: string;
   paused?: boolean;
+  scheme?: Scheme;
 }
 
 /**
@@ -31,7 +32,8 @@ export function Timer({
   trackColor = colors.surfaceMuted,
   caption,
   value,
-  paused = false
+  paused = false,
+  scheme = light
 }: Props) {
   const safeTotal = Math.max(1, total);
   const progress = Math.max(0, Math.min(1, remaining / safeTotal));
@@ -41,17 +43,24 @@ export function Timer({
     <ProgressRing
       progress={progress}
       size={size}
-      thickness={12}
+      thickness={6}
       color={color}
       trackColor={trackColor}
       accessibilityLabel={`${caption ? `${caption}. ` : ''}${formatSeconds(remaining)} remaining${paused ? ', paused' : ''}`}
     >
       <View style={styles.center}>
-        {caption ? <Text style={styles.caption}>{caption.toUpperCase()}</Text> : null}
-        <Text style={[styles.clock, paused && styles.paused]} allowFontScaling={false}>
+        {caption ? (
+          <Text style={[styles.caption, {color: scheme.inkFaint}]}>{caption}</Text>
+        ) : null}
+        <Text
+          style={[styles.clock, {color: paused ? scheme.inkFaint : scheme.ink}]}
+          allowFontScaling={false}
+        >
           {clock}
         </Text>
-        {paused ? <Text style={styles.pausedLabel}>PAUSED</Text> : null}
+        {paused ? (
+          <Text style={[styles.pausedLabel, {color: scheme.highlight}]}>Paused</Text>
+        ) : null}
       </View>
     </ProgressRing>
   );
@@ -59,12 +68,11 @@ export function Timer({
 
 const styles = StyleSheet.create({
   center: {alignItems: 'center', gap: spacing.xs},
-  caption: {...type.eyebrow, color: colors.inkFaint},
-  // Font scaling is disabled on the clock alone: the digits must never wrap or
-  // clip inside the ring. Every other label in the app scales normally.
-  clock: {...type.timer, color: colors.ink},
-  paused: {color: colors.inkFaint},
-  pausedLabel: {...type.eyebrow, color: colors.clay}
+  caption: {...type.label, color: colors.inkFaint},
+  // Font scaling is off on the clock alone: the digits must never wrap or clip
+  // inside the ring, and tabular figures stop them shuffling as they count.
+  clock: {...type.timer, ...tabular, color: colors.ink},
+  pausedLabel: {...type.label, color: colors.clay}
 });
 
 export default Timer;

@@ -192,6 +192,50 @@ The key is held in the device keystore via `expo-secure-store`. On web there is
 no keystore, so it falls back to local storage and the Settings screen says so
 rather than implying a safety that is not there.
 
+## Design
+
+The look is meant to sit next to the premium end of the category rather than
+the template end of it. Three decisions carry most of that.
+
+**A real typeface, used for two different jobs.** Fraunces, an editorial
+serif, sets the few places a screen actually speaks — the date on Today, a
+session's name, the welcome headline. Inter Tight sets everything that works:
+labels, controls, and every number. System fonts are the single clearest tell
+of an unfinished app, and six bundled faces (1.4 MB, imported per weight so the
+families' other fifty files stay out of the bundle) remove it.
+
+**Type set deliberately in two directions.** Display sizes carry negative
+tracking, because default spacing looks gappy once type is large; all-caps
+labels carry positive tracking, for the opposite reason. Both are encoded in
+the type scale rather than left to each screen. Numbers that change in place —
+the session clock, every statistic — are set with tabular figures so the digits
+do not shuffle as they count.
+
+**Separation by tone and hairline, not drop shadow.** Cards are a surface step
+plus a hairline. Sections open with a rule and a small-caps label, which is
+what makes a column of sections read as a publication rather than a settings
+screen. Statistics are oversized and quiet-labelled. One accent — the forest
+green — is reserved for action and progress, and nothing else competes with it.
+
+**Two surfaces, one brand.** Daylight (warm paper, forest ink) for browsing,
+planning and reflecting. Nightfall (warm near-black, never pure black) for the
+session player and the breathing screen, where the primary action inverts to
+cream and progress becomes a mint ring. A bright screen in a dim room is the
+wrong answer; this is the right one, and it is where the app most resembles the
+premium fitness apps it sits beside.
+
+The tokens live in `src/theme/index.ts` — palette, both schemes, the spacing
+and radius scales, the type scale, and the motion timings. Screens compose
+tokens and never invent a colour or a magic number.
+
+### Known gaps
+
+Dark mode is currently scoped to the player and the breathing screen rather
+than offered app-wide. The token system already carries a full `dark` scheme,
+so the remaining work is converting each screen's `StyleSheet.create` to a
+themed factory — mechanical, but it touches every screen, so it is a separate
+change rather than one smuggled into this one.
+
 ## Architecture
 
 ```
@@ -211,7 +255,7 @@ src/
     duration.ts           allocation maths; the parts always sum to the whole
     runwalk.ts            run/walk intervals, by effort rather than pace
   data/
-    exercises.ts          82 movements with cues, regressions, progressions
+    exercises.ts          85 movements with cues, regressions, progressions
     explore.ts            the Explore catalogue
     places.ts             places, and the constraints each one implies
   store/                  four small zustand stores, hydrated at launch
@@ -225,7 +269,8 @@ src/
   components/             Button, Card, ChoiceChip, ProgressRing, Timer,
                           BreathingCircle, ExerciseCard, MetricCard,
                           EmptyState, ScreenContainer, SectionHeader
-  theme/                  colour, spacing, radius, type and motion tokens
+  theme/                  palette, both schemes, spacing, radius, type, motion
+    fonts.ts              the six bundled faces, imported per weight
   hooks/                  reduced motion, interval timing
 ```
 
