@@ -8,6 +8,7 @@ import {maskKey} from '../../src/lib/secrets';
 import {HAIRLINE, TAB_BAR_INSET, MIN_TAP, colors, radius, spacing, type} from '../../src/theme';
 import {Activity, EquipmentId, Goal, Level, TimePreference} from '../../src/types';
 import {useProfileStore} from '../../src/store/useProfileStore';
+import {getExercise} from '../../src/data/exercises';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
 import {useTodayStore} from '../../src/store/useTodayStore';
 import {useSessionStore} from '../../src/store/useSessionStore';
@@ -77,6 +78,8 @@ export default function Settings() {
   const apiKey = useProfileStore(state => state.apiKey);
   const secureStorage = useProfileStore(state => state.secureStorage);
   const setApiKey = useProfileStore(state => state.setApiKey);
+
+  const allowExercise = useProfileStore(state => state.allowExercise);
 
   const [tapCount, setTapCount] = useState(0);
   const [keyDraft, setKeyDraft] = useState('');
@@ -199,6 +202,33 @@ export default function Settings() {
         value={profile.equipment.map(item => EQUIPMENT_LABELS[item]).join(', ') || 'Bodyweight'}
         onPress={() => router.push({pathname: '/onboarding/equipment', params: {edit: '1'}})}
       />
+
+      {/* ——— Movements you have ruled out ——— */}
+      {profile.excluded.length > 0 ? (
+        <>
+          <SectionHeader
+            title="Not for you"
+            subtitle="Movements Steady Move no longer offers"
+          />
+          <Card style={styles.block}>
+            {profile.excluded.map(id => {
+              const exercise = getExercise(id);
+              return (
+                <View key={id} style={styles.excludedRow}>
+                  <Text style={styles.excludedName}>{exercise?.name ?? id}</Text>
+                  <Button
+                    label="Allow again"
+                    variant="ghost"
+                    size="small"
+                    fullWidth={false}
+                    onPress={() => void allowExercise(id)}
+                  />
+                </View>
+              );
+            })}
+          </Card>
+        </>
+      ) : null}
 
       {/* ——— Accessibility ——— */}
       <SectionHeader title="Feel" />
@@ -442,6 +472,15 @@ const styles = StyleSheet.create({
   toggleText: {flex: 1, gap: 2},
   toggleLabel: {...type.bodyStrong, color: colors.ink},
   divider: {height: StyleSheet.hairlineWidth, backgroundColor: colors.border},
+
+  excludedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minHeight: MIN_TAP
+  },
+  excludedName: {...type.body, color: colors.ink, flex: 1},
 
   keyInput: {
     ...type.body,

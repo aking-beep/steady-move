@@ -30,6 +30,9 @@ interface ProfileState {
   updateProfile: (patch: Partial<ProfileDraft>) => Promise<void>;
   updateSettings: (patch: Partial<Settings>) => Promise<void>;
   resetOnboarding: () => Promise<void>;
+  /** Stops offering a movement entirely, or offers it again. */
+  excludeExercise: (id: string) => Promise<void>;
+  allowExercise: (id: string) => Promise<void>;
   setApiKey: (value: string) => Promise<void>;
   reset: () => void;
 }
@@ -40,7 +43,8 @@ const emptyDraft: ProfileDraft = {
   activities: [],
   equipment: ['bodyweight'],
   timePreference: 20,
-  weeklyTarget: 4
+  weeklyTarget: 4,
+  excluded: []
 };
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
@@ -113,6 +117,18 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   resetOnboarding: async () => {
     set({profile: null, draft: emptyDraft});
     await removeKey(KEYS.profile);
+  },
+
+  excludeExercise: async id => {
+    const current = get().profile;
+    if (!current || current.excluded.includes(id)) return;
+    await get().updateProfile({excluded: [...current.excluded, id]});
+  },
+
+  allowExercise: async id => {
+    const current = get().profile;
+    if (!current) return;
+    await get().updateProfile({excluded: current.excluded.filter(item => item !== id)});
   },
 
   setApiKey: async value => {

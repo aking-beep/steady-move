@@ -13,7 +13,7 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "lint": "eslint app src",
     "doctor": "expo-doctor",
-    "pretest": "tsc --pretty false --strict --noUncheckedIndexedAccess false --esModuleInterop --target ES2020 --module commonjs --moduleResolution node --skipLibCheck --rootDir src --outDir .test-build src/types/index.ts src/data/exercises.ts src/data/explore.ts src/data/places.ts src/engine/duration.ts src/engine/runwalk.ts src/engine/planner.ts src/lib/progress.ts src/lib/date.ts src/lib/demo.ts src/lib/sessions.ts src/lib/places.ts src/lib/storage.ts src/lib/vision.ts"
+    "pretest": "tsc --pretty false --strict --noUncheckedIndexedAccess false --esModuleInterop --target ES2020 --module commonjs --moduleResolution node --skipLibCheck --rootDir src --outDir .test-build src/types/index.ts src/data/exercises.ts src/data/explore.ts src/data/places.ts src/engine/duration.ts src/engine/runwalk.ts src/engine/planner.ts src/engine/adaptation.ts src/engine/swap.ts src/lib/progress.ts src/lib/date.ts src/lib/demo.ts src/lib/sessions.ts src/lib/places.ts src/lib/storage.ts src/lib/vision.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

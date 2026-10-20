@@ -100,6 +100,11 @@ export function parseProfile(value: unknown): Profile | null {
     equipment: stringList(value.equipment, EQUIPMENT, defaultProfile.equipment),
     timePreference: parseTimePreference(value.timePreference),
     weeklyTarget: intInRange(value.weeklyTarget, 1, 7, defaultProfile.weeklyTarget),
+    // Movement ids are validated against the library when they are used, not
+    // here: an id from a future version should survive a downgrade intact.
+    excluded: Array.isArray(value.excluded)
+      ? value.excluded.filter((id: unknown): id is string => typeof id === 'string').slice(0, 200)
+      : [],
     createdAt: value.createdAt
   };
 }

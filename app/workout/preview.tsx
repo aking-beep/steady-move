@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Alert, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useRouter} from 'expo-router';
 import Animated, {FadeIn} from 'react-native-reanimated';
 import {AlertCircle, ChevronLeft, Info, RefreshCw} from 'lucide-react-native';
@@ -10,6 +10,8 @@ import {useTodayStore} from '../../src/store/useTodayStore';
 import {useHistoryStore} from '../../src/store/useHistoryStore';
 import {useSessionStore} from '../../src/store/useSessionStore';
 import {INTENSITY_LABEL, PAIN_NOTICE, PHASE_LABEL, groupByPhase} from '../../src/engine/planner';
+import {swapBlock} from '../../src/engine/swap';
+import {tapSelection} from '../../src/lib/haptics';
 import {formatDuration} from '../../src/engine/duration';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 import {tapComplete} from '../../src/lib/haptics';
@@ -25,6 +27,11 @@ export default function Preview() {
   const startSession = useSessionStore(state => state.start);
 
   const [rebuilding, setRebuilding] = useState(false);
+  // Tapping swap again should keep moving through the alternatives rather than
+  // flipping between the same two.
+  const [swapSteps, setSwapSteps] = useState<Record<string, number>>({});
+  const setSession = useTodayStore(state => state.setSession);
+  const excludeExercise = useProfileStore(state => state.excludeExercise);
   const groups = useMemo(() => (session ? groupByPhase(session) : []), [session]);
 
   const onRebuild = useCallback(async () => {
@@ -33,6 +40,62 @@ export default function Preview() {
     await rebuild(profile, logs);
     setRebuilding(false);
   }, [logs, profile, rebuild]);
+
+  /** Swap one movement, keeping the session exactly as long as it was. */
+  const onSwap = useCallback(
+    async (blockId: string) => {
+      if (!session || !profile) return;
+      const step = (swapSteps[blockId] ?? 0) + 1;
+      const {session: next, swappedTo} = swapBlock({session, blockId, profile, step});
+      if (!swappedTo) {
+        Alert.alert(
+          'Nothing to swap to',
+          'There is no other movement that fits your level, your equipment and the space you are in. Rebuilding the session will find a different shape.'
+        );
+        return;
+      }
+      tapSelection();
+      setSwapSteps(current => ({...current, [blockId]: step}));
+      await setSession(next);
+    },
+    [profile, session, setSession, swapSteps]
+  );
+
+  /** Rule a movement out for good, then fill the gap it leaves. */
+  const onExclude = useCallback(
+    async (blockId: string, exerciseId: string, name: string) => {
+      if (!session || !profile) return;
+      await excludeExercise(exerciseId);
+      const {session: next, swappedTo} = swapBlock({
+        session,
+        blockId,
+        profile: {...profile, excluded: [...profile.excluded, exerciseId]},
+        step: 0
+      });
+      if (swappedTo) await setSession(next);
+      Alert.alert(
+        `${name} removed`,
+        'Steady Move will stop offering this movement. You can bring it back from Settings at any time.'
+      );
+    },
+    [excludeExercise, profile, session, setSession]
+  );
+
+  const onBlockPress = useCallback(
+    (blockId: string, exerciseId: string | undefined, name: string) => {
+      if (!exerciseId) return;
+      Alert.alert(name, 'Not working for you today?', [
+        {text: 'Keep it', style: 'cancel'},
+        {text: 'Swap it', onPress: () => void onSwap(blockId)},
+        {
+          text: 'Never show this',
+          style: 'destructive',
+          onPress: () => void onExclude(blockId, exerciseId, name)
+        }
+      ]);
+    },
+    [onExclude, onSwap]
+  );
 
   const onStart = useCallback(async () => {
     if (!session) return;
@@ -112,12 +175,27 @@ export default function Preview() {
             <Text style={styles.groupTime}>{formatDuration(group.seconds)}</Text>
           </View>
           <Card style={styles.groupCard}>
-            {group.blocks.map(block => (
-              <ExerciseCard key={block.id} block={block} />
-            ))}
+            {group.blocks.map(block =>
+              block.exerciseId ? (
+                <Pressable
+                  key={block.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${block.name}. Swap or remove this movement`}
+                  onPress={() => onBlockPress(block.id, block.exerciseId, block.name)}
+                >
+                  <ExerciseCard block={block} />
+                </Pressable>
+              ) : (
+                <ExerciseCard key={block.id} block={block} />
+              )
+            )}
           </Card>
         </View>
       ))}
+
+      <Text style={styles.swapHint}>
+        Tap any movement to swap it, or to stop being offered it altogether.
+      </Text>
 
       <View style={styles.actions}>
         <Button label="Start session" onPress={onStart} silent />
@@ -171,7 +249,13 @@ const styles = StyleSheet.create({
   groupTime: {...type.caption, ...tabular, color: colors.inkFaint},
   groupCard: {padding: spacing.sm, borderRadius: radius.md},
 
-  actions: {marginTop: spacing.xxxl, gap: spacing.md},
+  swapHint: {
+    ...type.caption,
+    color: colors.inkFaint,
+    textAlign: 'center',
+    marginTop: spacing.xxl
+  },
+  actions: {marginTop: spacing.xl, gap: spacing.md},
 
   empty: {flex: 1, justifyContent: 'center', gap: spacing.md},
   emptyTitle: {...type.heading, color: colors.ink, textAlign: 'center'},

@@ -153,6 +153,48 @@ cannot give.
 
 ---
 
+## Where the category falls down
+
+Three gaps, each closed deliberately. The first two are things competitors
+market; the third is something almost nobody does.
+
+**You get handed a movement you cannot do.** A bad knee, a shoulder that
+complains, a movement you simply dislike — and the options are do it or skip
+it. Tap any movement in the preview, or the swap control mid-session, and
+Steady Move replaces it with the same movement pattern, inside every
+constraint the session was built under: the level ceiling, the equipment to
+hand, the room available, the people around, the floor below. The block keeps
+its seconds, so a 20 minute session is still 20 minutes afterwards.
+
+The better apps let you swap *this once*. Steady Move also lets you say
+**never show this again**, and then does not — in generated sessions or in
+future swap suggestions. Settings lists what you have ruled out, and lets you
+change your mind.
+
+**Coming back after a break is punishing or ignored.** Most apps either carry
+on as though nothing happened or reset the plan and frame the gap as a
+failure; streak mechanics turn an ordinary gap into a reason to avoid opening
+the app at all. Coaching guidance is neither: do not restart, do not double up,
+come back lighter for a week.
+
+So a week away eases the next session down a step, three weeks eases it two,
+and Today says *"12 days since your last session. Nothing is lost."* The
+session's own explanation says the same. The easing caps the session rather
+than scaling it, so a high-energy day after a long gap still comes back
+gently — and anyone who disagrees can decline it and get their normal session.
+
+**Feedback is collected and ignored.** Steady Move has always asked how the
+effort felt at the end of every session, and until now it stored the answer and
+did nothing. Two of the last three sessions rated hard eases the next one off;
+two rated easy asks for a little more; one of either is a day, not a trend. The
+reason appears in the session's explanation, so it never behaves mysteriously.
+A layoff and the effort signal never argue — coming back decides the pitch on
+its own.
+
+None of this overrides the safety rules. Pain still routes to breathing,
+low energy with soreness still routes to recovery, and no amount of "that felt
+easy" moves either.
+
 ## The photo boundary
 
 Photo analysis is a **perception** step, not a prescription step. This is the
@@ -252,6 +294,8 @@ app/                      expo-router routes; one file per screen
 src/
   engine/                 the adaptive session engine
     planner.ts            chooses the session and builds its blocks
+    adaptation.ts         layoffs and the effort signal, read from history
+    swap.ts               honest replacements for a single movement
     duration.ts           allocation maths; the parts always sum to the whole
     runwalk.ts            run/walk intervals, by effort rather than pace
   data/
@@ -310,7 +354,7 @@ never throws into the app. "Delete local data" in Settings removes every key.
 
 ### Testing
 
-96 tests across five suites, run with `node:test` against the compiled pure
+122 tests across six suites, run with `node:test` against the compiled pure
 modules:
 
 - `tests/engine.test.cjs` — session length at 10/20/40 minutes, phase structure,
@@ -323,6 +367,11 @@ modules:
   Explore entry building a valid session, and the qualification rule.
 - `tests/storage.test.cjs` — round trips, corruption, version skew and deletion,
   against a stubbed AsyncStorage.
+- `tests/adaptation.test.cjs` — layoff thresholds, a first-time user not being
+  welcomed "back", easing capping intensity whatever the day looks like,
+  non-shaming language, the effort signal needing a trend rather than a day,
+  swaps obeying every rule the original did, and an excluded movement never
+  reappearing — including when someone excludes most of the library.
 - `tests/places.test.cjs` — every place's session staying inside its own
   constraints at every level, pain outranking the place, and the photo boundary:
   unknown values dropped, bodyweight always available, and a scan being unable

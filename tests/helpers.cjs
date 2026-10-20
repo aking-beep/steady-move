@@ -44,6 +44,7 @@ function makeProfile(overrides = {}) {
     equipment: ['bodyweight'],
     timePreference: 20,
     weeklyTarget: 4,
+    excluded: [],
     createdAt: '2026-10-01T09:00:00.000Z',
     ...overrides
   };

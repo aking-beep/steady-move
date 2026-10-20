@@ -72,6 +72,7 @@ test('what is written comes back unchanged', async () => {
     equipment: ['bodyweight', 'dumbbells'],
     timePreference: 20,
     weeklyTarget: 4,
+    excluded: ['mountain-climber'],
     createdAt: '2026-10-01T09:00:00.000Z'
   };
 
@@ -142,6 +143,7 @@ test('a profile with unknown values falls back field by field', () => {
   assert.deepEqual(parsed.equipment, ['bodyweight'], 'unknown equipment falls back');
   assert.equal(parsed.timePreference, 'flexible', 'an odd duration falls back');
   assert.equal(parsed.weeklyTarget, 7, 'the weekly target is clamped into range');
+  assert.deepEqual(parsed.excluded, [], 'a missing exclusion list becomes an empty one');
 });
 
 test('a profile with no creation stamp was never really completed', () => {

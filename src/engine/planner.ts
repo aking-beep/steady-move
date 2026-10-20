@@ -17,6 +17,7 @@
 
 import {
   Activity,
+  Adaptation,
   CheckIn,
   Exercise,
   Intensity,
@@ -41,6 +42,7 @@ import {
   selectPool
 } from '../data/exercises';
 import {allocate, allocateCapped, phaseBudgets} from './duration';
+import {readAdaptation} from './adaptation';
 import {buildRunWalkBlocks} from './runwalk';
 
 export interface PlanInput {
@@ -69,6 +71,11 @@ export interface PlanInput {
   constraints?: SpaceConstraints;
   /** A line about the place, folded into the session's explanation. */
   placeNote?: string;
+  /**
+   * What the recent past says about today. Computed from history when it is
+   * not supplied, so callers that do not care get the behaviour anyway.
+   */
+  adaptation?: Adaptation;
 }
 
 export const SESSION_TITLES: Record<SessionType, string> = {
@@ -175,11 +182,38 @@ function chooseType(profile: Profile, checkIn: CheckIn, history: WorkoutLog[], v
   return ranked[Math.abs(variant) % ranked.length];
 }
 
-function chooseIntensity(checkIn: CheckIn, profile: Profile, recovery: boolean): Intensity {
+const INTENSITY_LADDER: Intensity[] = ['gentle', 'easy', 'moderate', 'strong'];
+
+function shift(intensity: Intensity, steps: number): Intensity {
+  const index = INTENSITY_LADDER.indexOf(intensity);
+  const next = Math.min(INTENSITY_LADDER.length - 1, Math.max(0, index + steps));
+  return INTENSITY_LADDER[next];
+}
+
+function chooseIntensity(
+  checkIn: CheckIn,
+  profile: Profile,
+  recovery: boolean,
+  adaptation: Adaptation
+): Intensity {
   if (recovery) return 'gentle';
-  if (checkIn.energy === 'low' || checkIn.soreness === 'sore' || checkIn.mood === 'low') return 'easy';
-  if (checkIn.energy === 'high' && checkIn.soreness === 'none' && profile.level === 'regular') return 'strong';
-  return 'moderate';
+
+  let intensity: Intensity;
+  if (checkIn.energy === 'low' || checkIn.soreness === 'sore' || checkIn.mood === 'low') {
+    intensity = 'easy';
+  } else if (checkIn.energy === 'high' && checkIn.soreness === 'none' && profile.level === 'regular') {
+    intensity = 'strong';
+  } else {
+    intensity = 'moderate';
+  }
+
+  // Coming back from a break caps the session rather than scaling it: the
+  // first sessions back are lighter whatever the day otherwise looks like.
+  if (adaptation.layoff === 'returning') return shift(intensity, -2);
+  if (adaptation.layoff === 'easing') return shift(intensity, -1);
+
+  // Otherwise the effort ratings the person has been giving move the dial.
+  return shift(intensity, adaptation.effortBias);
 }
 
 // ——— Explaining the choice ——————————————————————————————————————————————
@@ -447,6 +481,9 @@ export function generateSession(input: PlanInput): Session {
   const variant = input.variant ?? 0;
   const now = input.now ?? new Date();
 
+  const adaptation =
+    input.adaptation ?? readAdaptation({history, profile, now});
+
   const budgets = phaseBudgets(checkIn.minutes);
   const painFlagged = checkIn.pain;
   const needsRecovery = painFlagged || (checkIn.energy === 'low' && checkIn.soreness === 'sore');
@@ -457,16 +494,18 @@ export function generateSession(input: PlanInput): Session {
       ? 'recovery'
       : (input.force ?? chooseType(profile, checkIn, history, variant));
 
-  const intensity = chooseIntensity(checkIn, profile, needsRecovery);
+  const intensity = chooseIntensity(checkIn, profile, needsRecovery, adaptation);
 
   const constraints = input.constraints;
+  const excluded = new Set(adaptation.excluded);
   const filter = {
     level: profile.level,
     equipment: checkIn.equipment,
     gentleOnly: needsRecovery,
     maxSpace: constraints?.space,
     discreetOnly: constraints?.discreet,
-    quietOnly: constraints?.quiet
+    quietOnly: constraints?.quiet,
+    exclude: excluded
   };
 
   // ARRIVE — always breathing, always the same shape, so starting is easy.
@@ -520,9 +559,10 @@ export function generateSession(input: PlanInput): Session {
     move = buildFlow(pool.length ? pool : MOBILITY, budgets.move, 'move', {variant, targetEach: 95});
   } else {
     // strength / calisthenics / balanced — a circuit of work and rest.
-    const exclude = new Set(
-      type === 'balanced' ? [] : CARDIO.filter(e => e.category === 'cardio').map(e => e.id)
-    );
+    const exclude = new Set([
+      ...excluded,
+      ...(type === 'balanced' ? [] : CARDIO.filter(e => e.category === 'cardio').map(e => e.id))
+    ]);
     let pool = selectPool(MAIN_POOL, {...filter, exclude});
 
     if (type === 'strength') {
@@ -560,7 +600,8 @@ export function generateSession(input: PlanInput): Session {
     gentleOnly: painFlagged,
     maxSpace: constraints?.space,
     discreetOnly: constraints?.discreet,
-    quietOnly: constraints?.quiet
+    quietOnly: constraints?.quiet,
+    exclude: excluded
   });
   // Closing down with the same stretch the session just held reads as a bug.
   // In a constrained place the pool can be too small to avoid it entirely, so
@@ -599,7 +640,7 @@ export function generateSession(input: PlanInput): Session {
     type,
     title: painFlagged ? 'Gentle Reset' : (input.titleOverride ?? SESSION_TITLES[type]),
     focus: painFlagged ? 'Breathing and body awareness only' : SESSION_FOCUS[type],
-    rationale: [buildRationale(checkIn, intensity, type), input.placeNote]
+    rationale: [buildRationale(checkIn, intensity, type), adaptation.note, input.placeNote]
       .filter(Boolean)
       .join(' '),
     intensity,
@@ -609,7 +650,9 @@ export function generateSession(input: PlanInput): Session {
     checkIn,
     adjustedForRecovery: needsRecovery,
     painFlagged,
-    variant
+    variant,
+    constraints,
+    adaptation
   };
 }
 

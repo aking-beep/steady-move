@@ -24,6 +24,7 @@ import {greeting} from '../../src/lib/date';
 import {buildExploreSession} from '../../src/lib/sessions';
 import {EXPLORE_ITEMS, QUICK_MOVE_IDS} from '../../src/data/explore';
 import {INTENSITY_LABEL} from '../../src/engine/planner';
+import {readAdaptation} from '../../src/engine/adaptation';
 import {useReducedMotion} from '../../src/hooks/useMotion';
 
 const QUICK_ICONS: Record<string, React.ReactNode> = {
@@ -47,6 +48,10 @@ export default function Today() {
   const activeStartedAt = useSessionStore(state => state.startedAt);
 
   const summary = useMemo(() => getProgress(logs), [logs]);
+  const adaptation = useMemo(
+    () => readAdaptation({history: logs, profile}),
+    [logs, profile]
+  );
   const weeklyTarget = profile?.weeklyTarget ?? 4;
   const hasUnfinished = Boolean(activeSession && activeStartedAt);
 
@@ -133,6 +138,21 @@ export default function Today() {
           />
         </Card>
       </Animated.View>
+
+      {/* ——— Back after a gap ——— */}
+      {adaptation.layoff !== 'none' && !session && !hasUnfinished ? (
+        <Animated.View entering={rise(1)}>
+          <Card tone="sunken" style={styles.returnCard}>
+            <Text style={styles.returnLabel}>
+              {adaptation.layoff === 'returning' ? 'Welcome back' : 'Good to see you'}
+            </Text>
+            <Text style={styles.returnBody}>
+              {adaptation.daysSinceLastSession} days since your last session. Nothing is lost —
+              today comes back lighter, and builds from there.
+            </Text>
+          </Card>
+        </Animated.View>
+      ) : null}
 
       {/* ——— Where you are ——— */}
       <Animated.View entering={rise(1)}>
@@ -230,6 +250,10 @@ const styles = StyleSheet.create({
   heroMeta: {...type.caption, color: colors.sage, marginTop: spacing.sm, ...tabular},
   heroBody: {...type.small, color: 'rgba(242,239,231,0.72)', marginTop: spacing.sm},
   heroButton: {marginTop: spacing.xl},
+
+  returnCard: {marginTop: spacing.lg, gap: spacing.xs, borderRadius: radius.md},
+  returnLabel: {...type.label, color: colors.primary},
+  returnBody: {...type.small, color: colors.inkSoft},
 
   placeRow: {
     flexDirection: 'row',

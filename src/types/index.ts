@@ -75,6 +75,34 @@ export const PLACE_IDS: PlaceId[] = [
   'small-space'
 ];
 
+/**
+ * How long it has been since the last qualifying session, and what that should
+ * mean for today.
+ *
+ *   • `none`      — training normally.
+ *   • `easing`    — a week or more away. The first sessions back come down in
+ *                   intensity rather than picking up where they left off.
+ *   • `returning` — three weeks or more. Gentler still, and said out loud.
+ */
+export type LayoffState = 'none' | 'easing' | 'returning';
+
+/** What recent sessions say about how the next one should be pitched. */
+export interface Adaptation {
+  layoff: LayoffState;
+  /** Whole days since the last qualifying session; null if there never was one. */
+  daysSinceLastSession: number | null;
+  /**
+   * −1 to ease off, +1 to push on, 0 to hold. Derived from the effort ratings
+   * the person already gives at the end of every session, which most apps
+   * collect and then ignore.
+   */
+  effortBias: -1 | 0 | 1;
+  /** Movement ids to leave out entirely. */
+  excluded: string[];
+  /** One plain sentence about why today is pitched the way it is, if at all. */
+  note?: string;
+}
+
 export interface SpaceConstraints {
   /** The most room any movement may need. */
   space: SpaceNeed;
@@ -92,6 +120,12 @@ export interface Profile {
   timePreference: TimePreference;
   /** Movement days per week the person is aiming for. Never enforced. */
   weeklyTarget: number;
+  /**
+   * Movements this person has said are not for them. Steady Move stops
+   * offering these entirely — a bad knee, a shoulder that complains, or simply
+   * a movement they dislike. Competitors let you swap once; this remembers.
+   */
+  excluded: string[];
   /** ISO timestamp of when onboarding was completed. */
   createdAt: string;
 }
@@ -263,6 +297,10 @@ export interface Session {
   painFlagged: boolean;
   /** Increment used to produce a different valid session from the same inputs. */
   variant: number;
+  /** What the place allowed, kept so a swapped movement obeys it too. */
+  constraints?: SpaceConstraints;
+  /** What the recent past contributed, kept so the UI can explain it. */
+  adaptation?: Adaptation;
 }
 
 // ——— History ———————————————————————————————————————————————————————————
@@ -306,6 +344,7 @@ export const defaultProfile: Profile = {
   equipment: ['bodyweight'],
   timePreference: 20,
   weeklyTarget: 4,
+  excluded: [],
   createdAt: ''
 };
 
