@@ -409,6 +409,30 @@ export const defaultSettings: Settings = {
   developerMode: false
 };
 
+/**
+ * The parts of a check-in that rarely change day to day. Remembered so a
+ * returning person answers what actually moved — energy, soreness, pain, time
+ * — instead of re-stating where they live and what kit they own.
+ *
+ * Energy, soreness and pain are deliberately NOT remembered: they are the
+ * whole point of checking in, and a stale "no pain" is not an answer.
+ */
+export interface CheckInDefaults {
+  mood: Mood;
+  minutes: TimeBudget;
+  location: LocationId;
+  equipment: EquipmentId[];
+}
+
+export function defaultsFrom(checkIn: CheckIn): CheckInDefaults {
+  return {
+    mood: checkIn.mood,
+    minutes: checkIn.minutes,
+    location: checkIn.location,
+    equipment: checkIn.equipment
+  };
+}
+
 export function emptyCheckIn(dateKey: string): CheckIn {
   return {
     date: dateKey,

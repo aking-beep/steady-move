@@ -5,10 +5,27 @@
 // check-in from another day is treated as absent.
 
 import {create} from 'zustand';
-import {CheckIn, Profile, Session, WorkoutLog, emptyCheckIn} from '../types';
-import {KEYS, parseCheckIn, parseSession, readKey, removeKey, writeKey} from '../lib/storage';
+import {
+  CheckIn,
+  CheckInDefaults,
+  Profile,
+  Session,
+  WorkoutLog,
+  defaultsFrom,
+  emptyCheckIn
+} from '../types';
+import {
+  KEYS,
+  parseCheckIn,
+  parseDefaults,
+  parseSession,
+  readKey,
+  removeKey,
+  writeKey
+} from '../lib/storage';
 import {generateSession} from '../engine/planner';
 import {localDateKey} from '../lib/date';
+import {seedDraft} from '../lib/checkin';
 
 interface TodayState {
   hydrated: boolean;
@@ -18,6 +35,8 @@ interface TodayState {
   draft: CheckIn;
   /** The session built from the check-in, before or during the workout. */
   session: Session | null;
+  /** Last time's answers to the parts that rarely change. */
+  defaults: CheckInDefaults | null;
 
   hydrate: () => Promise<void>;
   startDraft: (profile: Profile | null) => void;
@@ -38,12 +57,14 @@ export const useTodayStore = create<TodayState>((set, get) => ({
   checkIn: null,
   draft: emptyCheckIn(localDateKey(new Date())),
   session: null,
+  defaults: null,
 
   hydrate: async () => {
     const todayKey = localDateKey(new Date());
-    const [stored, session] = await Promise.all([
+    const [stored, session, defaults] = await Promise.all([
       readKey(KEYS.checkIn, parseCheckIn, null),
-      readKey(KEYS.session, parseSession, null)
+      readKey(KEYS.session, parseSession, null),
+      readKey(KEYS.defaults, parseDefaults, null)
     ]);
 
     // Yesterday's check-in is history, not today's answer.
@@ -57,22 +78,15 @@ export const useTodayStore = create<TodayState>((set, get) => ({
     set({
       checkIn,
       session: validSession,
-      draft: checkIn ?? emptyCheckIn(todayKey),
+      defaults,
+      draft: checkIn ?? seedDraft(todayKey, defaults, null),
       hydrated: true
     });
   },
 
   startDraft: profile => {
     const todayKey = localDateKey(new Date());
-    const base = emptyCheckIn(todayKey);
-    set({
-      draft: {
-        ...base,
-        // Start from what the person told us during onboarding.
-        minutes: typeof profile?.timePreference === 'number' ? profile.timePreference : base.minutes,
-        equipment: profile?.equipment.length ? profile.equipment : base.equipment
-      }
-    });
+    set({draft: seedDraft(todayKey, get().defaults, profile)});
   },
 
   setDraft: patch => set(state => ({draft: {...state.draft, ...patch}})),
@@ -88,8 +102,13 @@ export const useTodayStore = create<TodayState>((set, get) => ({
   submitCheckIn: async (profile, history) => {
     const checkIn: CheckIn = {...get().draft, createdAt: new Date().toISOString()};
     const session = generateSession({profile, checkIn, history, variant: 0});
-    set({checkIn, session});
-    await Promise.all([writeKey(KEYS.checkIn, checkIn), writeKey(KEYS.session, session)]);
+    const defaults = defaultsFrom(checkIn);
+    set({checkIn, session, defaults});
+    await Promise.all([
+      writeKey(KEYS.checkIn, checkIn),
+      writeKey(KEYS.session, session),
+      writeKey(KEYS.defaults, defaults)
+    ]);
     return session;
   },
 

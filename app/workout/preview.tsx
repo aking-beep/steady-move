@@ -119,7 +119,7 @@ export default function Preview() {
 
   const exerciseCount = session.blocks.filter(block => block.kind === 'exercise').length;
 
-  return (
+  const body = (
     <ScreenContainer bottomInset={spacing.huge + spacing.xxl}>
       <View style={styles.header}>
         <Pressable
@@ -196,23 +196,53 @@ export default function Preview() {
       <Text style={styles.swapHint}>
         Tap any movement to swap it, or to stop being offered it altogether.
       </Text>
-
-      <View style={styles.actions}>
-        <Button label="Start session" onPress={onStart} silent />
-        <Button
-          label="Rebuild"
-          variant="secondary"
-          onPress={onRebuild}
-          loading={rebuilding}
-          icon={<RefreshCw size={16} color={colors.ink} strokeWidth={2} />}
-          accessibilityHint="Builds a different session using the same answers"
-        />
-      </View>
     </ScreenContainer>
+  );
+
+  return (
+    <View style={styles.screen}>
+      {body}
+
+      {/* The one thing you came here to do stays under your thumb, however far
+          down the list you have scrolled. */}
+      <View style={styles.dock}>
+        <View style={styles.dockRow}>
+          <Button label="Start session" onPress={onStart} silent style={styles.dockStart} />
+          <Button
+            label="Rebuild"
+            variant="secondary"
+            onPress={onRebuild}
+            loading={rebuilding}
+            fullWidth={false}
+            style={styles.dockRebuild}
+            icon={<RefreshCw size={16} color={colors.ink} strokeWidth={2} />}
+            accessibilityHint="Builds a different session using the same answers"
+          />
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {flex: 1, backgroundColor: colors.canvas},
+
+  dock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
+    backgroundColor: colors.canvas,
+    borderTopWidth: HAIRLINE,
+    borderTopColor: colors.border
+  },
+  dockRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  dockStart: {flex: 1},
+  dockRebuild: {paddingHorizontal: spacing.lg},
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

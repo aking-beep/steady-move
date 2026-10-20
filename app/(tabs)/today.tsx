@@ -51,6 +51,7 @@ export default function Today() {
   const session = useTodayStore(state => state.session);
   const startDraft = useTodayStore(state => state.startDraft);
   const setSession = useTodayStore(state => state.setSession);
+  const defaults = useTodayStore(state => state.defaults);
   const logs = useHistoryStore(state => state.logs);
   const activeSession = useSessionStore(state => state.session);
   const activeStartedAt = useSessionStore(state => state.startedAt);
@@ -71,10 +72,12 @@ export default function Today() {
     []
   );
 
+  // Someone who has checked in before goes straight to the one-screen version:
+  // what changed today, with everything else carried over.
   const openCheckIn = useCallback(() => {
     startDraft(profile);
-    router.push('/check-in');
-  }, [profile, router, startDraft]);
+    router.push(defaults ? '/check-in?mode=quick' : '/check-in');
+  }, [defaults, profile, router, startDraft]);
 
   const startQuickMove = useCallback(
     async (itemId: string) => {

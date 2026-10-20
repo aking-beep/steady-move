@@ -1,8 +1,8 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {useRouter} from 'expo-router';
+import {useLocalSearchParams, useRouter} from 'expo-router';
 import Animated, {FadeIn, FadeInRight} from 'react-native-reanimated';
-import {AlertCircle, ChevronLeft, X} from 'lucide-react-native';
+import {AlertCircle, Check, ChevronLeft, X} from 'lucide-react-native';
 import {
   Button,
   Card,
@@ -10,7 +10,7 @@ import {
   ScreenContainer,
   SegmentedChoice
 } from '../src/components';
-import {MIN_TAP, colors, radius, spacing, type} from '../src/theme';
+import {HAIRLINE, MIN_TAP, colors, radius, spacing, type} from '../src/theme';
 import {CheckIn, EquipmentId, Energy, LocationId, Mood, Soreness, TimeBudget} from '../src/types';
 import {useProfileStore} from '../src/store/useProfileStore';
 import {useTodayStore} from '../src/store/useTodayStore';
@@ -18,6 +18,16 @@ import {useHistoryStore} from '../src/store/useHistoryStore';
 import {PAIN_NOTICE} from '../src/engine/planner';
 import {useReducedMotion} from '../src/hooks/useMotion';
 import {tapSelection} from '../src/lib/haptics';
+
+// Two ways through the same check-in.
+//
+// Quick is for the person who trains most days: the things that rarely change
+// — mood, place, kit — are carried over from last time, so all that is left is
+// what actually moved today. One screen, and often one tap.
+//
+// Full is the seven-step flow, used on the first check-in and whenever someone
+// asks for it. Neither path guesses at pain: it is asked every single time.
+type Mode = 'quick' | 'full';
 
 type StepId = 'energy' | 'mood' | 'soreness' | 'pain' | 'time' | 'location' | 'equipment';
 
@@ -85,8 +95,22 @@ export default function CheckInScreen() {
   const submitCheckIn = useTodayStore(state => state.submitCheckIn);
   const logs = useHistoryStore(state => state.logs);
 
+  const params = useLocalSearchParams<{mode?: string}>();
+  const defaults = useTodayStore(state => state.defaults);
+  // Quick needs somewhere to carry answers over from; without that it would
+  // just be the full flow with questions missing.
+  const [mode, setMode] = useState<Mode>(params.mode === 'quick' && defaults ? 'quick' : 'full');
+
   const [index, setIndex] = useState(0);
   const [building, setBuilding] = useState(false);
+
+  const submit = useCallback(() => {
+    if (!profile) return;
+    setBuilding(true);
+    submitCheckIn(profile, logs)
+      .then(() => router.replace('/workout/preview'))
+      .catch(() => setBuilding(false));
+  }, [logs, profile, router, submitCheckIn]);
 
   const step = STEPS[index];
   const isLast = index === STEPS.length - 1;
@@ -96,13 +120,8 @@ export default function CheckInScreen() {
       setIndex(current => current + 1);
       return;
     }
-    if (!profile) return;
-
-    setBuilding(true);
-    submitCheckIn(profile, logs)
-      .then(() => router.replace('/workout/preview'))
-      .catch(() => setBuilding(false));
-  }, [isLast, logs, profile, router, submitCheckIn]);
+    submit();
+  }, [isLast, submit]);
 
   const goBack = useCallback(() => {
     if (index === 0) {
@@ -223,6 +242,135 @@ export default function CheckInScreen() {
     }
   }, [draft, pick, reduced, setDraft, step, toggleEquipment]);
 
+
+  // ——— Quick: one screen, the three things that change ———
+  if (mode === 'quick') {
+    const equipmentSummary = draft.equipment
+      .map(id => EQUIPMENT.find(option => option.value === id)?.label ?? id)
+      .join(', ');
+    const place = LOCATIONS.find(option => option.value === draft.location)?.label ?? 'Home';
+
+    return (
+      <ScreenContainer contentStyle={styles.content}>
+        <View style={styles.header}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close check-in"
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={styles.headerButton}
+          >
+            <X size={22} color={colors.ink} strokeWidth={2} />
+          </Pressable>
+          <View style={styles.progress} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Answer every question instead"
+            onPress={() => setMode('full')}
+            hitSlop={12}
+            style={styles.moreButton}
+          >
+            <Text style={styles.moreLabel}>All questions</Text>
+          </Pressable>
+        </View>
+
+        <Animated.View
+          entering={reduced ? undefined : FadeIn.duration(260)}
+          style={styles.quickBody}
+        >
+          <Text style={styles.eyebrow}>Today</Text>
+          <Text style={styles.title} accessibilityRole="header">
+            How are you arriving?
+          </Text>
+
+          <View style={styles.quickGroup}>
+            <Text style={styles.quickLabel}>Energy</Text>
+            <SegmentedChoice
+              label="Energy"
+              options={ENERGY}
+              value={draft.energy}
+              onChange={value => setDraft({energy: value})}
+            />
+          </View>
+
+          <View style={styles.quickGroup}>
+            <Text style={styles.quickLabel}>Soreness</Text>
+            <SegmentedChoice
+              label="Soreness"
+              options={SORENESS}
+              value={draft.soreness}
+              onChange={value => setDraft({soreness: value})}
+            />
+          </View>
+
+          <View style={styles.quickGroup}>
+            <Text style={styles.quickLabel}>Time</Text>
+            <SegmentedChoice
+              label="Time available"
+              options={TIMES}
+              value={draft.minutes}
+              onChange={value => setDraft({minutes: value})}
+            />
+          </View>
+
+          {/* Pain is never carried over and never assumed: one tap, every day. */}
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{checked: draft.pain === true}}
+            accessibilityLabel="There is pain I should not train through"
+            onPress={() => {
+              tapSelection();
+              setDraft({pain: !draft.pain});
+            }}
+            style={[styles.painRow, draft.pain && styles.painRowOn]}
+          >
+            <View style={[styles.painBox, draft.pain && styles.painBoxOn]}>
+              {draft.pain ? <Check size={14} color={colors.onPrimary} strokeWidth={3} /> : null}
+            </View>
+            <Text style={styles.painLabel}>There is pain I should not train through</Text>
+          </Pressable>
+
+          {draft.pain ? (
+            <Animated.View entering={reduced ? undefined : FadeIn.duration(300)}>
+              <Card tone="caution" style={styles.notice}>
+                <View style={styles.noticeHead}>
+                  <AlertCircle size={18} color={colors.caution} strokeWidth={2} />
+                  <Text style={styles.noticeTitle}>Today will be gentle</Text>
+                </View>
+                <Text style={styles.noticeBody}>{PAIN_NOTICE}</Text>
+              </Card>
+            </Animated.View>
+          ) : null}
+
+          {/* What is being reused, stated plainly, and changeable in one tap. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Carried over from last time: ${place}, ${equipmentSummary}. Change these`}
+            onPress={() => setMode('full')}
+            style={styles.carriedRow}
+          >
+            <Text style={styles.carriedText} numberOfLines={2}>
+              {`${place} · ${equipmentSummary}`}
+            </Text>
+            <Text style={styles.carriedAction}>Change</Text>
+          </Pressable>
+        </Animated.View>
+
+        <View style={styles.footer}>
+          <Button
+            label="Build my session"
+            onPress={() => {
+              tapSelection();
+              submit();
+            }}
+            loading={building}
+            silent
+          />
+        </View>
+      </ScreenContainer>
+    );
+  }
+
   return (
     <ScreenContainer contentStyle={styles.content}>
       <View style={styles.header}>
@@ -317,5 +465,49 @@ const styles = StyleSheet.create({
   noticeTitle: {...type.bodyStrong, color: colors.caution},
   noticeBody: {...type.small, color: colors.ink},
 
-  footer: {paddingTop: spacing.xl}
+  footer: {paddingTop: spacing.xl},
+
+  moreButton: {height: MIN_TAP, justifyContent: 'center', paddingHorizontal: spacing.xs},
+  moreLabel: {...type.label, color: colors.inkFaint},
+
+  quickBody: {flex: 1, paddingTop: spacing.xl},
+  quickGroup: {marginTop: spacing.xl, gap: spacing.sm},
+  quickLabel: {...type.label, color: colors.inkFaint},
+
+  painRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: HAIRLINE,
+    borderColor: colors.border,
+    minHeight: MIN_TAP
+  },
+  painRowOn: {borderColor: colors.caution, backgroundColor: colors.cautionSoft},
+  painBox: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.xs,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  painBoxOn: {backgroundColor: colors.caution, borderColor: colors.caution},
+  painLabel: {...type.small, color: colors.ink, flex: 1},
+
+  carriedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    minHeight: MIN_TAP
+  },
+  carriedText: {...type.caption, color: colors.inkFaint, flex: 1},
+  carriedAction: {...type.label, color: colors.primary}
 });

@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Activity,
   CheckIn,
+  CheckInDefaults,
   EquipmentId,
   Goal,
   Level,
@@ -30,6 +31,7 @@ export const KEYS = {
   profile: 'steady-move:v1:profile',
   settings: 'steady-move:v1:settings',
   checkIn: 'steady-move:v1:check-in',
+  defaults: 'steady-move:v1:defaults',
   session: 'steady-move:v1:session',
   history: 'steady-move:v1:history'
 } as const;
@@ -131,6 +133,21 @@ export function parseCheckIn(value: unknown): CheckIn | null {
     location: oneOf(value.location, LOCATIONS, 'home'),
     equipment: stringList(value.equipment, EQUIPMENT, ['bodyweight']),
     createdAt: typeof value.createdAt === 'string' ? value.createdAt : new Date().toISOString()
+  };
+}
+
+/**
+ * Remembered answers. Anything unreadable falls back to the same values a
+ * first-time check-in would use, so a corrupt record costs one extra tap and
+ * nothing else.
+ */
+export function parseDefaults(value: unknown): CheckInDefaults | null {
+  if (!isRecord(value)) return null;
+  return {
+    mood: oneOf(value.mood, MOOD, 'neutral'),
+    minutes: parseMinutes(value.minutes),
+    location: oneOf(value.location, LOCATIONS, 'home'),
+    equipment: stringList(value.equipment, EQUIPMENT, ['bodyweight'])
   };
 }
 

@@ -144,6 +144,10 @@ export default function SessionPlayer() {
   const leftInSession = sessionRemaining(state);
   const exerciseBlocks = session.blocks.filter(entry => entry.kind === 'exercise');
   const doneCount = state.completed.length;
+  // The next movement, skipping past any rest between here and there.
+  const upNext = session.blocks
+    .slice(state.index + 1)
+    .find(entry => entry.kind === 'exercise')?.name;
 
   return (
     <ScreenContainer
@@ -335,8 +339,12 @@ export default function SessionPlayer() {
           </>
         )}
 
+        {/* What is coming stays visible during the work, not only in the
+            rests: knowing the next movement is half of pacing the current one. */}
         <Text style={styles.counter}>
-          {`${doneCount} of ${exerciseBlocks.length} exercises done`}
+          {upNext
+            ? `${doneCount} of ${exerciseBlocks.length} done  ·  next: ${upNext}`
+            : `${doneCount} of ${exerciseBlocks.length} done  ·  last one`}
         </Text>
       </View>
     </ScreenContainer>

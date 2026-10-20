@@ -2,7 +2,7 @@ import React from 'react';
 import {StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import {Card} from './Card';
 import {Button} from './Button';
-import {HAIRLINE, colors, radius, spacing, type} from '../theme';
+import {HAIRLINE, MIN_TAP, colors, radius, spacing, type} from '../theme';
 import {BODY_AREAS, BODY_AREA_LABELS, BodyArea, Readiness, ReadinessState} from '../types';
 import {AreaBand, areaBand} from '../engine/load';
 
@@ -33,12 +33,27 @@ interface ReadinessCardProps {
 
 export function ReadinessCard({readiness, onGentle, style}: ReadinessCardProps) {
   const tint = STATE_TINT[readiness.state];
+  const spoken = `Today reads as ${STATE_LABEL[readiness.state]}. ${readiness.reason}`;
+
+  // On an ordinary day this is a line, not a card. Only a day that wants
+  // something different from you earns the room.
+  if (readiness.state === 'ready' || readiness.state === 'steady') {
+    return (
+      <View style={[styles.quiet, style]} accessible accessibilityLabel={spoken}>
+        <View style={[styles.dot, styles.quietDot, {backgroundColor: tint}]} />
+        <Text style={[styles.quietState, {color: tint}]}>{STATE_LABEL[readiness.state]}</Text>
+        <Text style={styles.quietReason} numberOfLines={2}>
+          {readiness.reason}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <Card
       tone={readiness.restAdvised ? 'highlight' : 'surface'}
       style={[styles.card, style]}
-      accessibilityLabel={`Today reads as ${STATE_LABEL[readiness.state]}. ${readiness.reason}`}
+      accessibilityLabel={spoken}
     >
       <View style={styles.head}>
         <View style={[styles.dot, {backgroundColor: tint}]} />
@@ -127,6 +142,19 @@ const styles = StyleSheet.create({
   reason: {...type.small, color: colors.inkSoft},
   action: {marginTop: spacing.lg},
   note: {...type.caption, color: colors.inkFaint, marginTop: spacing.sm},
+
+  quiet: {
+    flexDirection: 'row',
+    // Top aligned, so the label sits against the first line of the reason
+    // rather than floating in the middle of a two-line sentence.
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    minHeight: MIN_TAP
+  },
+  quietDot: {marginTop: 6},
+  quietState: {...type.label, marginTop: 1},
+  quietReason: {...type.caption, color: colors.inkFaint, flex: 1},
 
   balance: {gap: 0, borderRadius: radius.md},
   row: {
